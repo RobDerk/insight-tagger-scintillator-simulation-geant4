@@ -1,0 +1,22 @@
+/run/initialize
+
+# OpenGL-Visualisierung öffnen
+/vis/open OGL
+
+# Geometrie anzeigen
+/vis/drawVolume
+
+# Automatische Aktualisierung
+/vis/viewer/set/autoRefresh true
+
+# Teilchentrajektorien darstellen
+/vis/scene/add/trajectories smooth
+
+# Trajektorien über Events hinweg behalten
+/vis/scene/endOfEventAction accumulate
+
+# Trajektorie speichern
+/tracking/storeTrajectory 1
+
+# Genau ein Photon simulieren
+/run/beamOn 1
