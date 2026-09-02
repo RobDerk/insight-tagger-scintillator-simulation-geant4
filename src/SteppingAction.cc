@@ -13,7 +13,9 @@
 #include "G4LogicalVolume.hh"
 #include "G4VPhysicalVolume.hh"
 #include "G4GeometryTolerance.hh"
+#include "G4SystemOfUnits.hh"
 #include "G4Box.hh"
+#include "G4Electron.hh"
 
 #include <cmath>
 
@@ -32,11 +34,41 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     if (!fScoringVolume) {
         const auto detConstruction = static_cast<const DetectorConstruction*>(
         G4RunManager::GetRunManager()->GetUserDetectorConstruction());
+        
         fScoringVolume = detConstruction->GetScoringVolume();
     }
 
-    // get volume of the current step
-    G4LogicalVolume* volume = step->GetPreStepPoint()->GetTouchableHandle()->GetVolume()->GetLogicalVolume();
+    const auto* prePoint = step->GetPreStepPoint();
+
+    const auto* postPoint = step->GetPostStepPoint();
+
+    G4Track* track = step->GetTrack();
+
+    auto* volume = prePoint->GetTouchableHandle()->GetVolume()->GetLogicalVolume();
+
+    if (track->GetDefinition() == G4Electron::Definition()
+        && track->GetParentID() == 0 // only primary electon
+        && !fEventAction->IsElectronEntryTimeSet()
+        && volume == fScoringVolume)
+    {
+        if (prePoint->GetStepStatus() == fGeomBoundary)
+        {
+            fEventAction->SetElectronEntryTime(prePoint->GetGlobalTime());
+
+            G4cout
+                << "Electron entered scintillator at "
+                << prePoint->GetGlobalTime() / ns
+                << " ns"
+                << G4endl;
+        }
+    }
+
+    // only optical photons inside the scintillator
+    if (track->GetDefinition()
+        != G4OpticalPhoton::Definition())
+    {
+        return;
+    }
 
     // check if we are in scoring volume
     if (volume != fScoringVolume)
@@ -47,30 +79,20 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     // fScoringVolume ist bereits ein G4LogicalVolume*
     G4VSolid* solid = fScoringVolume->GetSolid();
 
-    G4double halfX = 0.0;
-    G4double halfY = 0.0;
-    G4double halfZ = 0.0;
+    // Check if Solid exits
+    auto* boxSolid = dynamic_cast<G4Box*>(solid);
 
-    // Typumwandlung zu G4Box
-    if (G4Box* boxSolid = dynamic_cast<G4Box*>(solid)) {
-        halfX = boxSolid->GetXHalfLength();
-        halfY = boxSolid->GetYHalfLength();
-        halfZ = boxSolid->GetZHalfLength();
-    }
-
-    G4Track* track = step->GetTrack();
-
-    // Check if the Optical Photon reach top or bottom for count
-    
-    // Only optical photons.
-    if (track->GetDefinition() != G4OpticalPhoton::Definition())
+    if (!boxSolid)
     {
         return;
     }
 
-    const auto* prePoint = step->GetPreStepPoint();
-    const auto* postPoint = step->GetPostStepPoint();
+    // get sizes of soldi box
+    G4double halfX = boxSolid->GetXHalfLength();
+    G4double halfY = boxSolid->GetYHalfLength();
+    G4double halfZ = boxSolid->GetZHalfLength();
 
+    // Check if the Optical Photon reach top or bottom for count
 
     // Photon must come from inside the scintillator.
     const auto* preVolume = prePoint->GetPhysicalVolume();
@@ -90,104 +112,75 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
         return;
     }
 
-    const auto& position = postPoint->GetPosition();
-    const G4double y = position.y();
+    const G4double y = postPoint->GetPosition().y();
 
     const G4double tolerance = 5.0 * G4GeometryTolerance::GetInstance()->GetSurfaceTolerance();
 
     const G4int trackID = track->GetTrackID();
-    G4double localTime = track->GetLocalTime();
-    G4double globalTime = track->GetGlobalTime(); 
+
+    // time boundary hit
+    const G4double globalTime = postPoint->GetGlobalTime();
+
+    // t = 0: ElectronEntryTime
+    if (!fEventAction->IsElectronEntryTimeSet())
+    {
+        return;
+    }
+
+    const G4double relativeTimeSinceElectronHit = globalTime - fEventAction->GetElectronEntryTime();
+    
+    // photon path length
+    const G4double trackLength = track->GetTrackLength();
+
+    // photonenrgy @ hit
+    const G4double photonEnergy = postPoint->GetKineticEnergy();
+
+    // Photon flight time, time since creation
+    const G4double photonFlightTime = track->GetLocalTime();
+
+    const auto* event = G4RunManager::GetRunManager()->GetCurrentEvent();
+    if (!event)
+    {
+        return;
+    }
+    
+    const G4int eventID = event->GetEventID();
+
+    G4String hitType;
+
+    if (std::abs(y - halfY) < tolerance)
+    {
+        // true nur beim ersten Hit dieses Photons
+        if (!fEventAction->RegisterTopPhoton(trackID, globalTime))
+        {
+            return;
+        }
+
+        hitType = "top";
+    } else if (std::abs(y + halfY) < tolerance)
+    {
+        if (!fEventAction->RegisterBottomPhoton(trackID, globalTime))
+        {
+            return;
+        }
+
+        hitType = "bottom";
+    } else {
+        return;
+    }
 
     // collect energy data for storing
     auto analysisManager = G4AnalysisManager::Instance();
 
-    // Top face: y = +halfY
-    if (std::abs(y - halfY) < tolerance)
-    {
-        fEventAction->RegisterTopPhoton(trackID, globalTime);
-
-        analysisManager->FillNtupleSColumn(1, "top");
-
-        G4cout << "Hit top"
-                << " Global Time: "
-                << globalTime
-                << " Local Time: "
-                << localTime
-                << G4endl;
-
-        return;
-    }
-
-    // Bottom face: y = -halfY
-    if (std::abs(y + halfY) < tolerance)
-    {
-        fEventAction->RegisterBottomPhoton(trackID, globalTime);
-
-        analysisManager->FillNtupleSColumn(1, "bottom");
-
-        G4cout << "Hit bottom"
-                << " Global Time: "
-                << globalTime
-                << " Local Time: "
-                << localTime
-                << G4endl;
-
-        return;
-    }
-
-    analysisManager->FillNtupleDColumn(2, globalTime);
-    analysisManager->FillNtupleDColumn(3, localTime);
+    analysisManager->FillNtupleDColumn(0, eventID);
+    analysisManager->FillNtupleDColumn(1, trackID);
+    analysisManager->FillNtupleSColumn(2, hitType);
+    analysisManager->FillNtupleDColumn(3, globalTime / ns);
+    analysisManager->FillNtupleDColumn(4, relativeTimeSinceElectronHit / ns);
+    analysisManager->FillNtupleDColumn(5, trackLength / mm);
+    analysisManager->FillNtupleDColumn(6, photonEnergy / eV);
+    analysisManager->FillNtupleDColumn(7, photonFlightTime / ns);
 
     analysisManager->AddNtupleRow();
-
-    // G4Track* track = step->GetTrack();
-
-    // // collect information about the step for data
-    // G4int eventID = G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID();
-    // G4double edepStep = step->GetTotalEnergyDeposit();
-    // G4double kineticEnergy = track->GetKineticEnergy();
-    // G4ThreeVector position = step->GetDeltaPosition();
-    // G4ThreeVector momentum = track->GetMomentum();
-    // G4double edepStepLen = step->GetStepLength();
-    // G4ThreeVector edepStepPos = step->GetPostStepPoint()->GetPosition();
-    // G4double tofStep = step->GetDeltaTime();
-    // G4double globalTime = track->GetGlobalTime();
-    // G4int trackID = track->GetTrackID();
-    // G4int parentID = track->GetParentID();
-    // G4String particleName = track->GetParticleDefinition()->GetParticleName();
-
-    // // add the energy dep
-    // fEventAction->AddEdep(edepStep);
-
-    // // collect energy data for storing
-    // auto analysisManager = G4AnalysisManager::Instance();
-
-
-    // // Optinal if parentID == 0 -> this is a primary track; save only primary tracks
-
-    // if (edepStep > 0.)
-    // {
-    //     analysisManager->FillNtupleDColumn(0, eventID);
-    //     analysisManager->FillNtupleDColumn(1, edepStep);
-    //     analysisManager->FillNtupleDColumn(2, kineticEnergy);
-    //     analysisManager->FillNtupleDColumn(3, position.x());
-    //     analysisManager->FillNtupleDColumn(4, position.y());
-    //     analysisManager->FillNtupleDColumn(5, position.z());
-    //     analysisManager->FillNtupleDColumn(6, momentum.z());
-    //     analysisManager->FillNtupleDColumn(7, momentum.z());
-    //     analysisManager->FillNtupleDColumn(8, momentum.z());
-    //     analysisManager->FillNtupleDColumn(9, edepStepLen);
-    //     analysisManager->FillNtupleDColumn(10, edepStepPos.x());
-    //     analysisManager->FillNtupleDColumn(11, edepStepPos.y());
-    //     analysisManager->FillNtupleDColumn(12, edepStepPos.z());
-    //     analysisManager->FillNtupleDColumn(13, tofStep);
-    //     analysisManager->FillNtupleDColumn(14, globalTime);
-    //     analysisManager->FillNtupleDColumn(15, trackID);
-    //     analysisManager->FillNtupleDColumn(16, parentID);
-    //     analysisManager->FillNtupleSColumn(17, particleName);
-
-    //     analysisManager->AddNtupleRow();
-    // }
 
 }

@@ -32,40 +32,6 @@ void RunAction::BeginOfRunAction(const G4Run* run)
     // inform the runManager to save random number seed
     G4RunManager::GetRunManager()->SetRandomNumberStore(false);
 
-    // // intialize the analysis manager
-    // auto analysisManager = G4AnalysisManager::Instance();
-
-    // // storing data in csv file
-    // std::string runNumber = std::to_string(run->GetRunID());
-    // G4String fileName = "run_" + runNumber + ".csv";
-
-    // analysisManager->SetNtupleDirectoryName("data");
-    // analysisManager->OpenFile(fileName);
-
-    // // Create an ntuple (row-based columns)
-    // analysisManager->CreateNtuple("StepData", "Energy Deposit and Step Info");
-    // analysisManager->CreateNtupleDColumn("eventID");
-    // analysisManager->CreateNtupleDColumn("edep");
-    // analysisManager->CreateNtupleDColumn("ekin");
-    // analysisManager->CreateNtupleDColumn("posX");
-    // analysisManager->CreateNtupleDColumn("posY");
-    // analysisManager->CreateNtupleDColumn("posZ");
-    // analysisManager->CreateNtupleDColumn("momX");
-    // analysisManager->CreateNtupleDColumn("momY");
-    // analysisManager->CreateNtupleDColumn("momZ");
-    // analysisManager->CreateNtupleDColumn("stepLen");
-    // analysisManager->CreateNtupleDColumn("stepLx");
-    // analysisManager->CreateNtupleDColumn("stepLy");
-    // analysisManager->CreateNtupleDColumn("stepLz");
-    // analysisManager->CreateNtupleDColumn("tof");
-    // analysisManager->CreateNtupleDColumn("globalTime");
-    // analysisManager->CreateNtupleDColumn("trackID");
-    // analysisManager->CreateNtupleDColumn("parentID");
-    // analysisManager->CreateNtupleSColumn("particleName");
-    // analysisManager->FinishNtuple();
-
-    // analysisManager->AddNtupleRow();
-
     // intialize the analysis manager to store data for photon hit top or bottom
     auto analysisManager = G4AnalysisManager::Instance();
 
@@ -79,9 +45,14 @@ void RunAction::BeginOfRunAction(const G4Run* run)
     // Create an ntuple (row-based columns)
     analysisManager->CreateNtuple("StepData", "Energy Deposit and Step Info");
     analysisManager->CreateNtupleDColumn("eventID");
+    analysisManager->CreateNtupleDColumn("trackID");
     analysisManager->CreateNtupleSColumn("hit");
     analysisManager->CreateNtupleDColumn("globaltime");
-    analysisManager->CreateNtupleDColumn("localtime");
+    analysisManager->CreateNtupleDColumn("timesinceelectronhit");
+    analysisManager->CreateNtupleDColumn("trackLength");
+    analysisManager->CreateNtupleDColumn("photonEnergy");
+    analysisManager->CreateNtupleDColumn("photonFlightTime");
+
     analysisManager->FinishNtuple();
 
     analysisManager->AddNtupleRow();

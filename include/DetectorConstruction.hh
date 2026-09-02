@@ -5,8 +5,11 @@
 
 #include "G4SystemOfUnits.hh"
 
+#include "globals.hh"
+
 class G4VPhysicalVolume;
 class G4LogicalVolume;
+class G4Material;
 
 class DetectorConstruction final : public G4VUserDetectorConstruction
 {
@@ -25,6 +28,9 @@ class DetectorConstruction final : public G4VUserDetectorConstruction
 
     private:
         G4LogicalVolume* fScintillatorLogical = nullptr;
+
+        G4Material* CreateEJ232();
+        G4Material* CreateAir();
 
     protected:
         G4LogicalVolume* fScoringVolume = nullptr;

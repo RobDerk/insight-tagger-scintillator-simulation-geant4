@@ -3,6 +3,8 @@
 
 #include "G4UserSteppingAction.hh"
 
+#include "globals.hh"
+
 class G4LogicalVolume;
 class G4Step;
 class EventAction;
@@ -19,7 +21,6 @@ class SteppingAction : public G4UserSteppingAction
 
   private:
     EventAction* fEventAction = nullptr;
-    
     G4LogicalVolume* fScoringVolume = nullptr;
 };
 

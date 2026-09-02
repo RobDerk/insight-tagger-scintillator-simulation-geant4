@@ -3,6 +3,7 @@
 
 #include "G4Event.hh"
 #include "G4ios.hh"
+#include "G4SystemOfUnits.hh"
 
 EventAction::EventAction(RunAction* runAction) : fRunAction(runAction)
 {
@@ -17,10 +18,15 @@ EventAction::~EventAction()
 // At the Beginn of the Action, E is zero
 void EventAction::BeginOfEventAction(const G4Event*)
 {
+    fElectronEntryTime = 0.0;
+    fElectronTimeSet = false;
+
     // Set energy and counts to zero
     fEdep = 0.;
+
     fNTop = 0;
     fNBottom = 0;
+
     fCountedPhotons.clear();
 }
 
@@ -47,27 +53,50 @@ void EventAction::EndOfEventAction(const G4Event* event)
 G4bool EventAction::RegisterTopPhoton(G4int trackID, G4double time)
 {
     const auto result = fCountedPhotons.insert(trackID);
+
     if (!result.second)
     {
         return false;
     }
 
-    G4double timeInNs = time;
+    if (!fElectronTimeSet)
+    {
+        return false;
+    }
+
+    G4double relativeTime = time - fElectronEntryTime;
 
     ++fNTop;
+
     return true;
 }
 
 G4bool EventAction::RegisterBottomPhoton(G4int trackID, G4double time)
 {
     const auto result = fCountedPhotons.insert(trackID);
+
     if (!result.second)
     {
         return false;
     }
 
-    G4double timeInNs = time;
+    if (!fElectronTimeSet)
+    {
+        return false;
+    }
+
+    G4double relativeTime = time - fElectronEntryTime;
 
     ++fNBottom;
+
     return true;
+}
+
+void EventAction::SetElectronEntryTime(G4double time)
+{
+    if (fElectronTimeSet)
+        return;
+
+    fElectronEntryTime = time;
+    fElectronTimeSet = true;
 }

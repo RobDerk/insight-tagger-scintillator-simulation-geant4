@@ -9,6 +9,9 @@
 #include "G4ThreeVector.hh"
 #include "G4Material.hh"
 #include "G4SDManager.hh"
+#include "G4PhysicalConstants.hh"
+
+#include <vector>
 
 DetectorConstruction::DetectorConstruction()
 {
@@ -32,17 +35,12 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // World
     //
 
+    auto* world_material = CreateAir();
+
     // World size
     G4double world_size_x = 10 * cm;
     G4double world_size_y = 10 * cm;
     G4double world_size_z = 10 * cm;
-    
-    // World Material
-    G4Material* world_material = nist->FindOrBuildMaterial("G4_AIR");
-
-    auto* air_mpt = new G4MaterialPropertiesTable();
-    air_mpt->AddProperty("RINDEX", "Air");
-    world_material->SetMaterialPropertiesTable(air_mpt);
 
     // Solid World
     auto solidWorld = new G4Box(
@@ -75,102 +73,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // Detector: Scintillator
     //
 
-    // Scintillator Material
-    G4Material* scintillator_material = nist->FindOrBuildMaterial("G4_PLASTIC_SC_VINYLTOLUENE"); // Plastic Scintillator
-    
-    // Optical properties of the scintillator
-    auto* scint_mpt = new G4MaterialPropertiesTable();
-
-    std::vector<G4double> photonEnergy =
-    {
-        2.38 * eV,
-        2.48 * eV,
-        2.58 * eV,
-        2.70 * eV,
-        2.82 * eV,
-        2.95 * eV,
-        3.10 * eV,
-        3.26 * eV,
-        3.44 * eV
-    };
-
-    std::vector<G4double> refractiveIndex =
-    {
-        1.58,
-        1.58,
-        1.58,
-        1.58,
-        1.58,
-        1.58,
-        1.58,
-        1.58,
-        1.58
-    };
-
-    std::vector<G4double> absorptionLength =
-    {
-        2.0 * m,
-        2.0 * m,
-        2.0 * m,
-        2.0 * m,
-        2.0 * m,
-        2.0 * m,
-        2.0 * m,
-        2.0 * m,
-        2.0 * m
-    };
-
-    std::vector<G4double> scintSpectrum =
-    {
-        0.00,
-        0.02,
-        0.08,
-        0.25,
-        0.65,
-        1.00,
-        0.70,
-        0.20,
-        0.02
-    };
- 
-    scint_mpt->AddProperty(
-        "RINDEX",
-        photonEnergy,
-        refractiveIndex
-    );
-
-    scint_mpt->AddProperty(
-        "ABSLENGTH",
-        photonEnergy,
-        absorptionLength
-    );
-
-    // Wavelenght of the photons
-    scint_mpt->AddProperty(
-        "SCINTILLATIONCOMPONENT1",
-        photonEnergy,
-        scintSpectrum
-    );
-
-    // Photons per deposit energy
-    scint_mpt->AddConstProperty(
-        "SCINTILLATIONYIELD",
-        3000. / MeV
-    );
-
-    // decay time of scintillation
-    scint_mpt->AddConstProperty(
-        "SCINTILLATIONTIMECONSTANT1",
-        2.1 * ns
-    );
-
-    // stats. fluc. of photon-yields
-    scint_mpt->AddConstProperty(
-        "RESOLUTIONSCALE",
-        1.0
-    );
-
-    scintillator_material->SetMaterialPropertiesTable(scint_mpt);
+    auto* scintillator_material = CreateEJ232();
 
     // Scintillator size
     G4double scint_size_x = 7 * mm;
@@ -273,5 +176,174 @@ void DetectorConstruction::ConstructSDandField()
     G4SDManager::GetSDMpointer()->AddNewDetector(scintillatorSD);
 
     SetSensitiveDetector(fScintillatorLogical, scintillatorSD);
-
 }
+
+G4Material* DetectorConstruction::CreateAir()
+{
+    auto* nist = G4NistManager::Instance();
+
+    // air material
+    G4Material* world_material = nist->FindOrBuildMaterial("G4_AIR");
+
+    std::vector<G4double> photonEnergy =
+    {
+        2.696 * eV,
+        2.818 * eV,
+        2.952 * eV,
+        3.100 * eV,
+        3.179 * eV,
+        3.263 * eV,
+        3.351 * eV,
+        3.444 * eV,
+        3.542 * eV,
+        3.647 * eV
+    };
+
+
+    std::vector<G4double> airRIndex =
+    {
+        1.0003,
+        1.0003,
+        1.0003,
+        1.0003,
+        1.0003,
+        1.0003,
+        1.0003,
+        1.0003,
+        1.0003,
+        1.0003
+    };
+
+    auto* air_mpt = new G4MaterialPropertiesTable();
+
+    air_mpt->AddProperty(
+        "RINDEX",
+        photonEnergy,
+        airRIndex
+    );
+
+    world_material->SetMaterialPropertiesTable(air_mpt);
+
+    return world_material;
+}
+
+G4Material* DetectorConstruction::CreateEJ232()
+{
+    auto* nist = G4NistManager::Instance();
+
+    auto* H = nist->FindOrBuildElement("H");
+    auto* C = nist->FindOrBuildElement("C");
+
+    // material
+    auto* EJ232 =
+        new G4Material(
+            "EJ232",
+            1.023 * g/cm3,
+            2
+        );
+
+    EJ232->AddElement(C, 9);
+    EJ232->AddElement(H, 10);
+
+    std::vector<G4double> photonEnergy =
+    {
+        2.696 * eV,
+        2.818 * eV,
+        2.952 * eV,
+        3.100 * eV,
+        3.179 * eV,
+        3.263 * eV,
+        3.351 * eV,
+        3.444 * eV,
+        3.542 * eV,
+        3.647 * eV
+    };
+
+    std::vector<G4double> scintSpectrum =
+    {
+        0.01,
+        0.05,
+        0.18,
+        0.40,
+        0.55,
+        0.75,
+        1.00,
+        0.75,
+        0.35,
+        0.05
+    };
+
+    std::vector<G4double> rIndex =
+    {
+        1.58,
+        1.58,
+        1.58,
+        1.58,
+        1.58,
+        1.58,
+        1.58,
+        1.58,
+        1.58,
+        1.58
+    };
+
+    std::vector<G4double> absLength =
+    {
+        10.0 * cm,
+        10.0 * cm,
+        10.0 * cm,
+        10.0 * cm,
+        10.0 * cm,
+        10.0 * cm,
+        10.0 * cm,
+        10.0 * cm,
+        10.0 * cm,
+        10.0 * cm
+    };
+
+    auto* scint_mpt = new G4MaterialPropertiesTable();
+
+    scint_mpt->AddProperty(
+        "RINDEX",
+        photonEnergy,
+        rIndex
+    );
+
+    scint_mpt->AddProperty(
+        "ABSLENGTH",
+        photonEnergy,
+        absLength
+    );
+
+    scint_mpt->AddProperty(
+        "SCINTILLATIONCOMPONENT1",
+        photonEnergy,
+        scintSpectrum
+    );
+
+    scint_mpt->AddConstProperty(
+        "SCINTILLATIONYIELD",
+        8400. / MeV
+    );
+
+    scint_mpt->AddConstProperty(
+        "SCINTILLATIONRISETIME1",
+        350. * ps
+    );
+
+    scint_mpt->AddConstProperty(
+        "SCINTILLATIONTIMECONSTANT1",
+        1600. * ps
+    );
+
+    scint_mpt->AddConstProperty(
+        "RESOLUTIONSCALE",
+        1.0
+    );
+
+    EJ232->SetMaterialPropertiesTable(scint_mpt);
+
+    return EJ232;
+}
+
+
