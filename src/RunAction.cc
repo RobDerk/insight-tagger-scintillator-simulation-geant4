@@ -55,8 +55,6 @@ void RunAction::BeginOfRunAction(const G4Run* run)
 
     analysisManager->FinishNtuple();
 
-    analysisManager->AddNtupleRow();
-
     // reset accumulables to their initial values
     G4AccumulableManager* accumulableManager = G4AccumulableManager::Instance();
     accumulableManager->Reset();
@@ -96,20 +94,6 @@ void RunAction::EndOfRunAction(const G4Run* run)
     auto analysisManager = G4AnalysisManager::Instance();
     analysisManager->Write();
     analysisManager->CloseFile();
-
-    // // Print
-    // if (IsMaster()) {
-    //     G4cout << G4endl << "--------------------End of Global Run-----------------------";
-    // }
-    // else {
-    //     G4cout << G4endl << "--------------------End of Local Run------------------------";
-    // }
-
-    // G4cout << G4endl << " The run is " << nofEvents << " " << runCondition << G4endl << G4endl;
-    // G4cout << "  --> cumulated edep per run in scoring volume = " << G4BestUnit(edep, "Energy") 
-    //         << " = " << edep/joule << " joule" << G4endl;  
-    // G4cout << "  --> mass of scoring volume = " << G4BestUnit(mass, "Mass") << G4endl << G4endl; 
-    // G4cout << "------------------------------------------------------------" << G4endl << G4endl;
 }
 
 void RunAction::AddEdep(G4double edep)
