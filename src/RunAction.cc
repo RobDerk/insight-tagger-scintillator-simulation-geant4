@@ -59,9 +59,25 @@ void RunAction::BeginOfRunAction(const G4Run* run)
     // intialize the analysis manager to store data for photon hit top or bottom
     auto analysisManager = G4AnalysisManager::Instance();
 
+    const G4int runID = run->GetRunID();
+
     // store data in a csv file
-    const G4String fileName = "photon_run_" + std::to_string(run->GetRunID()) + ".csv";
-    analysisManager->OpenFile(fileName);
+    const G4String fileName = "photon_run_" + std::to_string(runID) + ".csv";
+
+    G4cout
+    << "\n====================================\n"
+    << "Starting Run " << runID << "\n"
+    << "Output base name: " << fileName << "\n"
+    << "====================================\n"
+    << G4endl;
+
+    if (!analysisManager->OpenFile(fileName))
+    {
+        G4cerr
+            << "ERROR: Could not open analysis file "
+            << fileName
+            << G4endl;
+    }
 
     // reset accumulables to their initial values
     G4AccumulableManager* accumulableManager = G4AccumulableManager::Instance();

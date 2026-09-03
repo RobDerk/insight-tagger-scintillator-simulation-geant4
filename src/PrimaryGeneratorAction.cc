@@ -45,28 +45,19 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction()
 
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event)
 {
-    // Get world data
+    // Get world volume
     auto* logicWorld = G4LogicalVolumeStore::GetInstance()->GetVolume("World");
+
     auto* worldBox = dynamic_cast<G4Box*>(logicWorld->GetSolid());
 
-    // Get world size to setup particle gun
-    const G4double worldHalfX = worldBox->GetXHalfLength();
-    const G4double worldHalfY = worldBox->GetYHalfLength();
+    // World half length in z direction
     const G4double worldHalfZ = worldBox->GetZHalfLength();
 
-    // Get scintillator detector data
-    auto* fScintWorld = G4LogicalVolumeStore::GetInstance()->GetVolume("fScintillatorLogical");
-    auto* fScintBox = dynamic_cast<G4Box*>(fScintWorld->GetSolid());
-
-    // Get Scintillator size
-    const G4double scintHalfX = fScintBox->GetXHalfLength(); 
-    const G4double scintHalfY = fScintBox->GetYHalfLength();
-    const G4double scintHalfZ = fScintBox->GetZHalfLength();
-
-    // Center of the Scintillator Detector
-    const G4double x0 = 0;
-    const G4double y0 = 0;
-    const G4double z0 = -worldHalfZ + scintHalfX;
+    // Start in the middle of x/y,
+    // at the negative z side of the world
+    const G4double x0 = 0.0;
+    const G4double y0 = 0.0;
+    const G4double z0 = -worldHalfZ + 1.0 * um;
 
     fParticleGun->SetParticlePosition(G4ThreeVector(x0, y0, z0));
 

@@ -10,45 +10,102 @@
 #include "DetectorConstruction.hh"
 #include "PhysicsList.hh"
 
+#include <string>
+
 int main(int argc, char** argv)
 {
     G4UIExecutive* ui = nullptr;
 
-    if (argc == 1) {
+    if (argc == 1)
+    {
       ui = new G4UIExecutive(argc, argv);
     }
 
     // construct the default run Manager
-    auto runManager = G4RunManagerFactory::CreateRunManager(G4RunManagerType::Default);
+    auto runManager = G4RunManagerFactory::CreateRunManager(G4RunManagerType::SerialOnly);
     
     runManager->SetUserInitialization(new DetectorConstruction());
     runManager->SetUserInitialization(new PhysicsList());
     runManager->SetUserInitialization(new ActionInitialization());
 
-    // construct the vis
-    auto visManager = new G4VisExecutive(argc, argv);
-    
-    visManager->Initialize();
-
     // User Interface manager
     auto uiManager = G4UImanager::GetUIpointer();
     
     // Process macro or start UI session
-    //
-    if (!ui) {
-        // batch mode
-        G4String command = "/control/execute ";
-        G4String fileName = argv[1];
-        uiManager->ApplyCommand(command + fileName);
+
+    // batch mode
+    if (!ui)
+    {
+        // Macro file
+        G4String macroFile = argv[1];
+    
+        // Default number of events
+        G4int numberOfEvents = 1;
+    
+        // Optional second command line argument
+        if (argc >= 3)
+        {
+            try
+            {
+                numberOfEvents = std::stoi(argv[2]);
+            }
+            catch (...)
+            {
+                G4cerr
+                    << "Invalid number of events: "
+                    << argv[2]
+                    << G4endl;
+    
+                return 1;
+            }
+    
+            if (numberOfEvents <= 0)
+            {
+                G4cerr
+                    << "Number of events must be > 0"
+                    << G4endl;
+    
+                return 1;
+            }
+        }
+    
+        // Execute configuration macro
+        uiManager->ApplyCommand(
+            "/control/execute " + macroFile
+        );
+    
+        // Start simulation
+        G4String beamOnCommand =
+            "/run/beamOn "
+            + std::to_string(numberOfEvents);
+    
+        G4cout
+            << "\nStarting simulation with "
+            << numberOfEvents
+            << " events\n"
+            << G4endl;
+    
+        uiManager->ApplyCommand(
+            beamOnCommand
+        );
     }
-    else {
-        // interactive mode
+    // interactive ui mode
+    else
+    {
+        auto visManager = new G4VisExecutive(argc, argv);
+
+        visManager->Initialize();
+
         uiManager->ApplyCommand("/control/execute init_vis.mac");
+
         ui->SessionStart();
+
+        G4cout << "Starting simulation in ui mode" << G4endl;
+
+        delete visManager;
         delete ui;
     }
 
-    delete visManager;
     delete runManager;
 
     return 0;

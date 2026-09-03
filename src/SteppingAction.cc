@@ -55,12 +55,6 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
         if (prePoint->GetStepStatus() == fGeomBoundary)
         {
             fEventAction->SetElectronEntryTime(prePoint->GetGlobalTime());
-
-            G4cout
-                << "Electron entered scintillator at "
-                << prePoint->GetGlobalTime() / ns
-                << " ns"
-                << G4endl;
         }
     }
 
