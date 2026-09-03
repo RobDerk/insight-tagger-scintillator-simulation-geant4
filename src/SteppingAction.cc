@@ -16,6 +16,7 @@
 #include "G4SystemOfUnits.hh"
 #include "G4Box.hh"
 #include "G4Electron.hh"
+#include "G4VProcess.hh"
 
 #include <cmath>
 
@@ -64,10 +65,18 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     }
 
     // only optical photons inside the scintillator
-    if (track->GetDefinition()
-        != G4OpticalPhoton::Definition())
+    if (track->GetDefinition() != G4OpticalPhoton::Definition())
     {
         return;
+    }
+
+    // Get and store the process name, later to filter only scintillation photons
+    G4String creatorName = "unknown";
+
+    const G4VProcess* creatorProcess = track->GetCreatorProcess();
+    if (creatorProcess)
+    {
+        creatorName = creatorProcess->GetProcessName();
     }
 
     // check if we are in scoring volume
@@ -180,6 +189,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     analysisManager->FillNtupleDColumn(5, trackLength / mm);
     analysisManager->FillNtupleDColumn(6, photonEnergy / eV);
     analysisManager->FillNtupleDColumn(7, photonFlightTime / ns);
+    analysisManager->FillNtupleSColumn(8, creatorName);
 
     analysisManager->AddNtupleRow();
 

@@ -41,6 +41,7 @@ RunAction::RunAction()
     analysisManager->CreateNtupleDColumn("trackLength");      // 5
     analysisManager->CreateNtupleDColumn("photonEnergy");     // 6
     analysisManager->CreateNtupleDColumn("photonFlightTime"); // 7
+    analysisManager->CreateNtupleSColumn("creatorProcess"); // column 8
 
     analysisManager->FinishNtuple();
 }
