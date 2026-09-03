@@ -71,9 +71,9 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     }
 
     // Get and store the process name, later to filter only scintillation photons
-    G4String creatorName = "unknown";
+    const auto* creatorProcess = track->GetCreatorProcess();
 
-    const G4VProcess* creatorProcess = track->GetCreatorProcess();
+    G4String creatorName = "unknown";
     if (creatorProcess)
     {
         creatorName = creatorProcess->GetProcessName();
@@ -181,8 +181,8 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     // collect energy data for storing
     auto analysisManager = G4AnalysisManager::Instance();
 
-    analysisManager->FillNtupleDColumn(0, eventID);
-    analysisManager->FillNtupleDColumn(1, trackID);
+    analysisManager->FillNtupleIColumn(0, eventID);
+    analysisManager->FillNtupleIColumn(1, trackID);
     analysisManager->FillNtupleSColumn(2, hitType);
     analysisManager->FillNtupleDColumn(3, globalTime / ns);
     analysisManager->FillNtupleDColumn(4, relativeTimeSinceElectronHit / ns);
