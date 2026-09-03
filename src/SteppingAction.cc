@@ -38,6 +38,15 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
         G4RunManager::GetRunManager()->GetUserDetectorConstruction());
         
         fScoringVolume = detConstruction->GetScoringVolume();
+
+        auto* boxSolid = dynamic_cast<G4Box*>(fScoringVolume->GetSolid());
+
+        if (boxSolid)
+        {
+            fScintHalfX = boxSolid->GetXHalfLength();
+            fScintHalfY = boxSolid->GetYHalfLength();
+            fScintHalfZ = boxSolid->GetZHalfLength();
+        }
     }
 
     const auto* prePoint = step->GetPreStepPoint();
@@ -72,17 +81,6 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
                 const G4double entryTime = postPoint->GetGlobalTime();
     
                 fEventAction->SetElectronEntryTime(entryTime);
-    
-                // G4cout
-                //     << "Electron entered scintillator: "
-                //     << "event = "
-                //     << G4RunManager::GetRunManager()
-                //         ->GetCurrentEvent()
-                //         ->GetEventID()
-                //     << ", time = "
-                //     << entryTime / ns
-                //     << " ns"
-                //     << G4endl;
             }
         }
     }
@@ -93,49 +91,19 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
         return;
     }
 
-    // Get and store the process name, later to filter only scintillation photons
-    const auto* creatorProcess = track->GetCreatorProcess();
-
-    G4String creatorName = "unknown";
-    if (creatorProcess)
-    {
-        creatorName = creatorProcess->GetProcessName();
-    }
-
     // check if we are in scoring volume
+    // Photon must come from inside the scintillator.
     if (volume != fScoringVolume)
     {
         return;
     }
 
-    // fScoringVolume ist bereits ein G4LogicalVolume*
-    G4VSolid* solid = fScoringVolume->GetSolid();
-
-    // Check if Solid exits
-    auto* boxSolid = dynamic_cast<G4Box*>(solid);
-
-    if (!boxSolid)
-    {
-        return;
-    }
-
     // get sizes of soldi box
-    G4double halfX = boxSolid->GetXHalfLength();
-    G4double halfY = boxSolid->GetYHalfLength();
-    G4double halfZ = boxSolid->GetZHalfLength();
+    const G4double halfX = fScintHalfX;
+    const G4double halfY = fScintHalfY;
+    const G4double halfZ = fScintHalfZ;
 
     // Check if the Optical Photon reach top or bottom for count
-
-    // Photon must come from inside the scintillator.
-    if (!preVolume)
-    {
-        return;
-    }
-
-    if (preVolume->GetLogicalVolume() != fScoringVolume)
-    {
-        return;
-    }
 
     // Only steps that end on a geometry boundary.
     if (postPoint->GetStepStatus() != fGeomBoundary)
@@ -200,18 +168,35 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
         return;
     }
 
+    // Get and store the process name, later to filter only scintillation photons
+    const auto* creatorProcess = track->GetCreatorProcess();
+
+    G4String creatorName = "unknown";
+    if (creatorProcess)
+    {
+        creatorName = creatorProcess->GetProcessName();
+    }
+
+    // Get runID
+    const G4int runID = G4RunManager::GetRunManager()->GetCurrentRun()->GetRunID();
+
+    // Calculcate the photon creation time
+    const G4double photonCreationTime = relativeTimeSinceElectronHit - photonFlightTime;
+
     // collect energy data for storing
     auto analysisManager = G4AnalysisManager::Instance();
 
     analysisManager->FillNtupleIColumn(0, eventID);
-    analysisManager->FillNtupleIColumn(1, trackID);
-    analysisManager->FillNtupleSColumn(2, hitType);
-    analysisManager->FillNtupleDColumn(3, globalTime / ns);
-    analysisManager->FillNtupleDColumn(4, relativeTimeSinceElectronHit / ns);
-    analysisManager->FillNtupleDColumn(5, trackLength / mm);
-    analysisManager->FillNtupleDColumn(6, photonEnergy / eV);
-    analysisManager->FillNtupleDColumn(7, photonFlightTime / ns);
-    analysisManager->FillNtupleSColumn(8, creatorName);
+    analysisManager->FillNtupleIColumn(1, eventID);
+    analysisManager->FillNtupleIColumn(2, trackID);
+    analysisManager->FillNtupleSColumn(3, hitType);
+    analysisManager->FillNtupleDColumn(4, globalTime / ns);
+    analysisManager->FillNtupleDColumn(5, relativeTimeSinceElectronHit / ns);
+    analysisManager->FillNtupleDColumn(6, trackLength / mm);
+    analysisManager->FillNtupleDColumn(7, photonEnergy / eV);
+    analysisManager->FillNtupleDColumn(8, photonFlightTime / ns);
+    analysisManager->FillNtupleDColumn(8, photonCreationTime / ns);
+    analysisManager->FillNtupleSColumn(9, creatorName);
 
     analysisManager->AddNtupleRow();
 

@@ -22,6 +22,10 @@ class SteppingAction : public G4UserSteppingAction
   private:
     EventAction* fEventAction = nullptr;
     G4LogicalVolume* fScoringVolume = nullptr;
+
+    G4double fScintHalfX = 0.0;
+    G4double fScintHalfY = 0.0;
+    G4double fScintHalfZ = 0.0;
 };
 
 #endif

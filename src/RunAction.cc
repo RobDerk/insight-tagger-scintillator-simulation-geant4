@@ -33,15 +33,17 @@ RunAction::RunAction()
     analysisManager->CreateNtuple("StepData", "Optical photon timing data");
 
     // IDs should really be integer columns
-    analysisManager->CreateNtupleIColumn("eventID");          // 0
-    analysisManager->CreateNtupleIColumn("trackID");          // 1
-    analysisManager->CreateNtupleSColumn("hit");              // 2
-    analysisManager->CreateNtupleDColumn("globaltime");       // 3
-    analysisManager->CreateNtupleDColumn("timesinceelectronhit"); // 4
-    analysisManager->CreateNtupleDColumn("trackLength");      // 5
-    analysisManager->CreateNtupleDColumn("photonEnergy");     // 6
-    analysisManager->CreateNtupleDColumn("photonFlightTime"); // 7
-    analysisManager->CreateNtupleSColumn("creatorProcess"); // column 8
+    analysisManager->CreateNtupleIColumn("runID");
+    analysisManager->CreateNtupleIColumn("eventID");
+    analysisManager->CreateNtupleIColumn("trackID");
+    analysisManager->CreateNtupleSColumn("hit");
+    analysisManager->CreateNtupleDColumn("globaltime");
+    analysisManager->CreateNtupleDColumn("timesinceelectronhit");
+    analysisManager->CreateNtupleDColumn("trackLength");
+    analysisManager->CreateNtupleDColumn("photonEnergy");
+    analysisManager->CreateNtupleDColumn("photonFlightTime");
+    analysisManager->CreateNtupleDColumn("photonCreationTime");
+    analysisManager->CreateNtupleSColumn("creatorProcess");
 
     analysisManager->FinishNtuple();
 }
