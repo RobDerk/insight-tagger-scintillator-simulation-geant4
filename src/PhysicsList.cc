@@ -15,7 +15,10 @@ PhysicsList::PhysicsList()
     // Alle Standard Optical-Physics-Prozesse
     RegisterPhysics(new G4OpticalPhysics);
 
-    // Normale Zerfälle
+    // Rise time for scintillator
+    G4OpticalParameters::Instance()->SetScintFiniteRiseTime(true);
+
+    // Normal decays
     RegisterPhysics(new G4DecayPhysics());
 }
 

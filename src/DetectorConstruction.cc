@@ -247,59 +247,53 @@ G4Material* DetectorConstruction::CreateEJ232()
 
     std::vector<G4double> photonEnergy =
     {
-        2.696 * eV,
-        2.818 * eV,
-        2.952 * eV,
-        3.100 * eV,
-        3.179 * eV,
-        3.263 * eV,
-        3.351 * eV,
-        3.444 * eV,
-        3.542 * eV,
-        3.647 * eV
+        2.6953 * eV, 
+        2.7552 * eV,
+        2.8178 * eV,
+        2.8834 * eV,
+        2.9520 * eV,
+        3.0240 * eV,
+        3.0996 * eV,
+        3.1388 * eV,
+        3.1791 * eV,
+        3.2204 * eV,
+        3.2627 * eV,
+        3.3062 * eV,
+        3.3509 * eV,
+        3.3968 * eV,
+        3.4440 * eV,
+        3.4925 * eV,
+        3.5424 * eV,
+        3.5937 * eV,
+        3.6466 * eV 
     };
 
     std::vector<G4double> scintSpectrum =
     {
-        0.01,
-        0.05,
+        0.03,
+        0.06,
+        0.10,
         0.18,
-        0.40,
-        0.55,
+        0.30,
+        0.39,
+        0.52,
+        0.60,
         0.75,
-        1.00,
-        0.75,
+        0.84,
+        0.82,
+        0.87,
+        1.00, // 370 nm maximum
+        0.90,
+        0.68,
+        0.50,
+        0.52,
         0.35,
-        0.05
+        0.12 
     };
 
-    std::vector<G4double> rIndex =
-    {
-        1.58,
-        1.58,
-        1.58,
-        1.58,
-        1.58,
-        1.58,
-        1.58,
-        1.58,
-        1.58,
-        1.58
-    };
+    std::vector<G4double> rIndex(photonEnergy.size(), 1.58);
 
-    std::vector<G4double> absLength =
-    {
-        10.0 * cm,
-        10.0 * cm,
-        10.0 * cm,
-        10.0 * cm,
-        10.0 * cm,
-        10.0 * cm,
-        10.0 * cm,
-        10.0 * cm,
-        10.0 * cm,
-        10.0 * cm
-    };
+    std::vector<G4double> absLength(photonEnergy.size(), 10.0*cm);
 
     auto* scint_mpt = new G4MaterialPropertiesTable();
 

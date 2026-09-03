@@ -18,8 +18,30 @@ RunAction::RunAction()
 {
     // Register accumulable to the accumulable manager
     G4AccumulableManager* accumulableManager = G4AccumulableManager::Instance();
+
     accumulableManager->Register(fEdep);
     accumulableManager->Register(fEdep2);
+
+    // data to csv for Analysis
+    std::filesystem::create_directories("data");
+
+    auto analysisManager = G4AnalysisManager::Instance();
+
+    analysisManager->SetNtupleDirectoryName("data");
+
+    analysisManager->CreateNtuple("StepData", "Optical photon timing data");
+
+    // IDs should really be integer columns
+    analysisManager->CreateNtupleIColumn("eventID");          // 0
+    analysisManager->CreateNtupleIColumn("trackID");          // 1
+    analysisManager->CreateNtupleSColumn("hit");              // 2
+    analysisManager->CreateNtupleDColumn("globaltime");       // 3
+    analysisManager->CreateNtupleDColumn("timesinceelectronhit"); // 4
+    analysisManager->CreateNtupleDColumn("trackLength");      // 5
+    analysisManager->CreateNtupleDColumn("photonEnergy");     // 6
+    analysisManager->CreateNtupleDColumn("photonFlightTime"); // 7
+
+    analysisManager->FinishNtuple();
 }
 
 RunAction::~RunAction()
@@ -35,25 +57,9 @@ void RunAction::BeginOfRunAction(const G4Run* run)
     // intialize the analysis manager to store data for photon hit top or bottom
     auto analysisManager = G4AnalysisManager::Instance();
 
-    // storing data in csv file
-    std::string runNumber = std::to_string(run->GetRunID());
-    G4String fileName = "photon_run_" + runNumber + ".csv";
-
-    analysisManager->SetNtupleDirectoryName("data");
+    // store data in a csv file
+    const G4String fileName = "photon_run_" + std::to_string(run->GetRunID()) + ".csv";
     analysisManager->OpenFile(fileName);
-
-    // Create an ntuple (row-based columns)
-    analysisManager->CreateNtuple("StepData", "Energy Deposit and Step Info");
-    analysisManager->CreateNtupleDColumn("eventID");
-    analysisManager->CreateNtupleDColumn("trackID");
-    analysisManager->CreateNtupleSColumn("hit");
-    analysisManager->CreateNtupleDColumn("globaltime");
-    analysisManager->CreateNtupleDColumn("timesinceelectronhit");
-    analysisManager->CreateNtupleDColumn("trackLength");
-    analysisManager->CreateNtupleDColumn("photonEnergy");
-    analysisManager->CreateNtupleDColumn("photonFlightTime");
-
-    analysisManager->FinishNtuple();
 
     // reset accumulables to their initial values
     G4AccumulableManager* accumulableManager = G4AccumulableManager::Instance();
@@ -62,9 +68,6 @@ void RunAction::BeginOfRunAction(const G4Run* run)
 
 void RunAction::EndOfRunAction(const G4Run* run)
 {
-    G4int nofEvents = run->GetNumberOfEvent();
-    if (nofEvents == 0) return;
-
     // Merge accumulables
     G4AccumulableManager* accumulableManager = G4AccumulableManager::Instance();
     accumulableManager->Merge();
@@ -72,23 +75,6 @@ void RunAction::EndOfRunAction(const G4Run* run)
     // Compute dose = total energy deposit in a run and its variance
     G4double edep = fEdep.GetValue();
     G4double edep2 = fEdep2.GetValue();
-
-    const auto detConstruction = static_cast<const DetectorConstruction*>(G4RunManager::GetRunManager()->GetUserDetectorConstruction());
-
-    G4double mass = detConstruction->GetScoringVolume()->GetMass();
-
-    // Run conditions
-    // note: There is no primary generator action object for "master" run manager for multi-threaded mode.
-    const auto generatorAction = static_cast<const PrimaryGeneratorAction*>(G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
-    G4String runCondition;
-
-    if (generatorAction) {
-        const G4ParticleGun* particleGun = generatorAction->GetParticleGun();
-        runCondition += particleGun->GetParticleDefinition()->GetParticleName();
-        runCondition += " of ";
-        G4double particleEnergy = particleGun->GetParticleEnergy();
-        runCondition += G4BestUnit(particleEnergy, "Energy");
-    }
 
     // stroing data in csv
     auto analysisManager = G4AnalysisManager::Instance();

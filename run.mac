@@ -1,3 +1,4 @@
+/process/optical/scintillation/setFiniteRiseTime true
 /run/initialize
 
 /run/verbose 1
