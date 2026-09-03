@@ -32,7 +32,8 @@ SteppingAction::~SteppingAction()
 
 void SteppingAction::UserSteppingAction(const G4Step* step)
 {
-    if (!fScoringVolume) {
+    if (!fScoringVolume)
+    {
         const auto detConstruction = static_cast<const DetectorConstruction*>(
         G4RunManager::GetRunManager()->GetUserDetectorConstruction());
         
@@ -40,21 +41,49 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     }
 
     const auto* prePoint = step->GetPreStepPoint();
-
     const auto* postPoint = step->GetPostStepPoint();
+
+    const auto* preVolume = prePoint->GetPhysicalVolume();
+    const auto* postVolume = postPoint->GetPhysicalVolume();
 
     G4Track* track = step->GetTrack();
 
-    auto* volume = prePoint->GetTouchableHandle()->GetVolume()->GetLogicalVolume();
+    // Logical volume of current step
+    const G4LogicalVolume* volume = nullptr;
+
+    if (preVolume)
+    {
+        volume = preVolume->GetLogicalVolume();
+    }
 
     if (track->GetDefinition() == G4Electron::Definition()
         && track->GetParentID() == 0 // only primary electon
-        && !fEventAction->IsElectronEntryTimeSet()
-        && volume == fScoringVolume)
+        && !fEventAction->IsElectronEntryTimeSet())
     {
-        if (prePoint->GetStepStatus() == fGeomBoundary)
+        // Step crosses a geometry boundary
+        if (postPoint->GetStepStatus() == fGeomBoundary
+            && postVolume != nullptr
+            && postVolume->GetLogicalVolume() == fScoringVolume
+        )
         {
-            fEventAction->SetElectronEntryTime(prePoint->GetGlobalTime());
+            // Make sure it really came from outside
+            if (preVolume == nullptr || preVolume->GetLogicalVolume() != fScoringVolume)
+            {
+                const G4double entryTime = postPoint->GetGlobalTime();
+    
+                fEventAction->SetElectronEntryTime(entryTime);
+    
+                // G4cout
+                //     << "Electron entered scintillator: "
+                //     << "event = "
+                //     << G4RunManager::GetRunManager()
+                //         ->GetCurrentEvent()
+                //         ->GetEventID()
+                //     << ", time = "
+                //     << entryTime / ns
+                //     << " ns"
+                //     << G4endl;
+            }
         }
     }
 
@@ -98,7 +127,6 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     // Check if the Optical Photon reach top or bottom for count
 
     // Photon must come from inside the scintillator.
-    const auto* preVolume = prePoint->GetPhysicalVolume();
     if (!preVolume)
     {
         return;

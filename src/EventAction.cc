@@ -36,15 +36,12 @@ void EventAction::EndOfEventAction(const G4Event* event)
 
     fRunAction->WritePhotonCounts(eventID, fNTop, fNBottom);
 
-    if (eventID < 10)
-    {
-        G4cout
-            << "Event " << eventID
-            << ": N_top=" << fNTop
-            << ", N_bottom=" << fNBottom
-            << ", N_total=" << (fNTop + fNBottom)
-            << G4endl;
-    }
+    G4cout
+    << "Event " << eventID
+    << ": N_top=" << fNTop
+    << ", N_bottom=" << fNBottom
+    << ", N_total=" << (fNTop + fNBottom)
+    << G4endl;
 
     // energy deposit of electon; accumulate the stats in run action
     fRunAction->AddEdep(fEdep);
