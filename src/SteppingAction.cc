@@ -3,6 +3,7 @@
 #include "DetectorConstruction.hh"
 #include "EventAction.hh"
 
+#include "G4Run.hh"
 #include "G4Event.hh"
 #include "G4RunManager.hh"
 #include "G4Step.hh"
@@ -186,7 +187,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     // collect energy data for storing
     auto analysisManager = G4AnalysisManager::Instance();
 
-    analysisManager->FillNtupleIColumn(0, eventID);
+    analysisManager->FillNtupleIColumn(0, runID);
     analysisManager->FillNtupleIColumn(1, eventID);
     analysisManager->FillNtupleIColumn(2, trackID);
     analysisManager->FillNtupleSColumn(3, hitType);
@@ -195,8 +196,8 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     analysisManager->FillNtupleDColumn(6, trackLength / mm);
     analysisManager->FillNtupleDColumn(7, photonEnergy / eV);
     analysisManager->FillNtupleDColumn(8, photonFlightTime / ns);
-    analysisManager->FillNtupleDColumn(8, photonCreationTime / ns);
-    analysisManager->FillNtupleSColumn(9, creatorName);
+    analysisManager->FillNtupleDColumn(9, photonCreationTime / ns);
+    analysisManager->FillNtupleSColumn(10, creatorName);
 
     analysisManager->AddNtupleRow();
 
