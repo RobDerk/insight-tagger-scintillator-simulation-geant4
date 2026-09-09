@@ -188,9 +188,8 @@ int main(int argc, char** argv)
 
 
         uiManager->ApplyCommand(
-            "/control/execute init_vis.mac"
+            "/control/execute vis.mac"
         );
-
 
         ui->SessionStart();
 
