@@ -14,6 +14,10 @@
 #include "G4AnalysisManager.hh"
 
 #include <filesystem>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 
 RunAction::RunAction()
 {
@@ -30,7 +34,7 @@ RunAction::RunAction()
 
     analysisManager->SetNtupleDirectoryName("data");
 
-    analysisManager->CreateNtuple("StepData", "Optical photon timing data");
+    analysisManager->CreateNtuple("PhotonHits", "Optical photons reaching top or bottom detector surfaces");
 
     // IDs should really be integer columns
     analysisManager->CreateNtupleIColumn("runID");
@@ -63,8 +67,34 @@ void RunAction::BeginOfRunAction(const G4Run* run)
 
     const G4int runID = run->GetRunID();
 
+    // date and time
+    const auto now = std::chrono::system_clock::now();
+
+    const std::time_t nowTime = std::chrono::system_clock::to_time_t(now);
+
+    std::tm localTime{};
+
+    // Linux / Unix
+    localtime_r(&nowTime, &localTime);
+
+    std::ostringstream timeStream;
+
+    timeStream
+        << std::put_time(
+            &localTime,
+            "%Y%m%d_%H%M%S"
+        );
+
+
+    const std::string timestamp = timeStream.str();
+
     // store data in a csv file
-    const G4String fileName = "photon_run_" + std::to_string(runID) + ".csv";
+    const G4String fileName =
+        "photon_run_"
+        + std::to_string(runID)
+        + "_"
+        + timestamp
+        + ".csv";
 
     G4cout
     << "\n====================================\n"
