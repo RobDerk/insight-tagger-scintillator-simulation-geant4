@@ -15,6 +15,8 @@
 
 #include "Randomize.hh"
 
+#include <cmath>
+
 PrimaryGeneratorAction::PrimaryGeneratorAction()
 {
     // Number of Particles per Event Run
@@ -53,11 +55,18 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event)
     // World half length in z direction
     const G4double worldHalfZ = worldBox->GetZHalfLength();
 
-    // Start in the middle of x/y,
-    // at the negative z side of the world
+    // Start at the negative z side of the world. The y-position is chosen
+    // so the current beam direction crosses the scintillator centre.
     const G4double x0 = 0.0;
-    const G4double y0 = 0.0;
     const G4double z0 = -worldHalfZ + 1.0 * um;
+
+    const auto direction = fParticleGun->GetParticleMomentumDirection();
+    G4double y0 = 0.0;
+
+    if (std::abs(direction.z()) > 0.0)
+    {
+        y0 = -direction.y() * (0.0 - z0) / direction.z();
+    }
 
     fParticleGun->SetParticlePosition(G4ThreeVector(x0, y0, z0));
 

@@ -1,7 +1,7 @@
 #include "DetectorConstruction.hh"
+#include "OpticalMaterials.hh"
 #include "ScintillatorSD.hh"
 
-#include "G4NistManager.hh"
 #include "G4Box.hh"
 #include "G4LogicalVolume.hh"
 #include "G4PVPlacement.hh"
@@ -10,8 +10,8 @@
 #include "G4Material.hh"
 #include "G4SDManager.hh"
 #include "G4PhysicalConstants.hh"
-
-#include <vector>
+#include "G4OpticalSurface.hh"
+#include "G4LogicalBorderSurface.hh"
 
 DetectorConstruction::DetectorConstruction()
 {
@@ -25,9 +25,6 @@ DetectorConstruction::~DetectorConstruction()
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
 {
-    // Nist Material Manager
-    G4NistManager* nist = G4NistManager::Instance();
-
     // Option to switch on/off checking of volumes overlaps´
     G4bool checkOverlaps = true;
 
@@ -35,7 +32,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // World
     //
 
-    auto* world_material = CreateAir();
+    auto* world_material = OpticalMaterials::CreateAir();
 
     // World size
     G4double world_size_x = 10 * cm;
@@ -73,12 +70,12 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // Detector: Scintillator
     //
 
-    auto* scintillator_material = CreateEJ232();
+    auto* scintillator_material = OpticalMaterials::CreateEJ232();
 
     // Scintillator size
-    G4double scint_size_x = 7 * mm;
-    G4double scint_size_y = 35 * mm;
-    G4double scint_size_z = 2 * mm;
+    G4double scint_size_x = 7 * mm; // length
+    G4double scint_size_y = 35 * mm; // width
+    G4double scint_size_z = 2 * mm; // thickness
 
     // Scintillator Solid Box
     auto scintillatorSolid = new G4Box(
@@ -119,52 +116,74 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // Scintialltor Detector as ScoringVolume
     fScoringVolume = fScintillatorLogical;
 
-    // Later add PMT @ top and bottom
-    // //
-    // // Detector: PMT
-    // //
+    // Ideal photon collection surfaces
 
-    // // Material of PMTlogicWorld
-    // G4Material* pmt_material = nist->FindOrBuildMaterial("G4_SILICON_DIOXIDE");
+    const G4double collectorHalfThickness = 0.5 * um;
 
-    // // sizes
-    // G4double pmt_size_x = 30 * cm;
-    // G4double pmt_size_y = 20 * cm;
-    // G4double pmt_size_z = 5 * cm;
+    // Same x/z size as scintillator end face
+    auto* collectorSolid = new G4Box(
+        "PhotonCollectorSolid",
+        scint_size_x,
+        collectorHalfThickness,
+        scint_size_z
+    );
 
-    // // PMT Solid Box
-    // auto PMTSolid = new G4Box(
-    //     "PMTSolid",
-    //     pmt_size_x,
-    //     pmt_size_y,
-    //     pmt_size_z
-    // );
+    // Material is basically irrelevant because the ideal optical surface
+    // absorbs/detects the photon before it propagates inside the collector
+    auto* collectorLogical = new G4LogicalVolume(
+        collectorSolid,
+        world_material,
+        "PhotonCollectorLogical"
+    );
 
-    // // PMT Logical Volume
-    // auto PMTLogical = new G4LogicalVolume(
-    //     PMTSolid,
-    //     pmt_material,
-    //     "fPMTLogical"
-    // );
+    // Top collector
+    fTopCollectorPhysical = new G4PVPlacement(
+        nullptr,
+        G4ThreeVector(
+            scint_place_x0,
+            scint_place_y0 + scint_size_y + collectorHalfThickness,
+            scint_place_z0
+        ),
+        collectorLogical,
+        "TopPhotonCollector",
+        logicWorld,
+        false,
+        0,
+        checkOverlaps
+    );
 
-    // G4double pmt_place_x0 = 0.0; 
-    // G4double pmt_place_y0 = 0.0;
-    // G4double pmt_place_z0 = 0.0;
+    // Bottom collector
+    fBottomCollectorPhysical = new G4PVPlacement(
+        nullptr,
+        G4ThreeVector(
+            scint_place_x0,
+            scint_place_y0 - scint_size_y - collectorHalfThickness,
+            scint_place_z0
+        ),
+        collectorLogical,
+        "BottomPhotonCollector",
+        logicWorld,
+        false,
+        1,
+        checkOverlaps
+    );
 
-    // auto PMTPhysical = new G4PVPlacement(
-    //     nullptr,
-    //     G4ThreeVector(
-    //         pmt_place_x0,
-    //         pmt_place_y0,
-    //         pmt_place_z0
-    //     ),
-    //     PMTLogical,
-    //     "PMTPhysical",
-    //     logicWorld,
-    //     false,
-    //     0,
-    //     checkOverlaps
-    // );
+    auto* idealDetectorSurface =
+        OpticalMaterials::CreateIdealPhotonDetectorSurface();
+
+    new G4LogicalBorderSurface(
+        "ScintillatorToTopCollectorSurface",
+        scintillatorPhysical,
+        fTopCollectorPhysical,
+        idealDetectorSurface
+    );
+
+    new G4LogicalBorderSurface(
+        "ScintillatorToBottomCollectorSurface",
+        scintillatorPhysical,
+        fBottomCollectorPhysical,
+        idealDetectorSurface
+    );
 
     return physWorld;
 }
@@ -177,167 +196,3 @@ void DetectorConstruction::ConstructSDandField()
 
     SetSensitiveDetector(fScintillatorLogical, scintillatorSD);
 }
-
-G4Material* DetectorConstruction::CreateAir()
-{
-    auto* nist = G4NistManager::Instance();
-
-    // air material
-    G4Material* world_material = nist->FindOrBuildMaterial("G4_AIR");
-
-    std::vector<G4double> photonEnergy =
-    {
-        2.696 * eV,
-        2.818 * eV,
-        2.952 * eV,
-        3.100 * eV,
-        3.179 * eV,
-        3.263 * eV,
-        3.351 * eV,
-        3.444 * eV,
-        3.542 * eV,
-        3.647 * eV
-    };
-
-
-    std::vector<G4double> airRIndex =
-    {
-        1.0003,
-        1.0003,
-        1.0003,
-        1.0003,
-        1.0003,
-        1.0003,
-        1.0003,
-        1.0003,
-        1.0003,
-        1.0003
-    };
-
-    auto* air_mpt = new G4MaterialPropertiesTable();
-
-    air_mpt->AddProperty(
-        "RINDEX",
-        photonEnergy,
-        airRIndex
-    );
-
-    world_material->SetMaterialPropertiesTable(air_mpt);
-
-    return world_material;
-}
-
-G4Material* DetectorConstruction::CreateEJ232()
-{
-    auto* nist = G4NistManager::Instance();
-
-    auto* H = nist->FindOrBuildElement("H");
-    auto* C = nist->FindOrBuildElement("C");
-
-    // material
-    auto* EJ232 =
-        new G4Material(
-            "EJ232",
-            1.023 * g/cm3,
-            2
-        );
-
-    EJ232->AddElement(C, 9);
-    EJ232->AddElement(H, 10);
-
-    std::vector<G4double> photonEnergy =
-    {
-        2.6953 * eV, 
-        2.7552 * eV,
-        2.8178 * eV,
-        2.8834 * eV,
-        2.9520 * eV,
-        3.0240 * eV,
-        3.0996 * eV,
-        3.1388 * eV,
-        3.1791 * eV,
-        3.2204 * eV,
-        3.2627 * eV,
-        3.3062 * eV,
-        3.3509 * eV,
-        3.3968 * eV,
-        3.4440 * eV,
-        3.4925 * eV,
-        3.5424 * eV,
-        3.5937 * eV,
-        3.6466 * eV 
-    };
-
-    std::vector<G4double> scintSpectrum =
-    {
-        0.03,
-        0.06,
-        0.10,
-        0.18,
-        0.30,
-        0.39,
-        0.52,
-        0.60,
-        0.75,
-        0.84,
-        0.82,
-        0.87,
-        1.00, // 370 nm maximum
-        0.90,
-        0.68,
-        0.50,
-        0.52,
-        0.35,
-        0.12 
-    };
-
-    std::vector<G4double> rIndex(photonEnergy.size(), 1.58);
-
-    std::vector<G4double> absLength(photonEnergy.size(), 10.0*cm);
-
-    auto* scint_mpt = new G4MaterialPropertiesTable();
-
-    scint_mpt->AddProperty(
-        "RINDEX",
-        photonEnergy,
-        rIndex
-    );
-
-    scint_mpt->AddProperty(
-        "ABSLENGTH",
-        photonEnergy,
-        absLength
-    );
-
-    scint_mpt->AddProperty(
-        "SCINTILLATIONCOMPONENT1",
-        photonEnergy,
-        scintSpectrum
-    );
-
-    scint_mpt->AddConstProperty(
-        "SCINTILLATIONYIELD",
-        8400. / MeV
-    );
-
-    scint_mpt->AddConstProperty(
-        "SCINTILLATIONRISETIME1",
-        350. * ps
-    );
-
-    scint_mpt->AddConstProperty(
-        "SCINTILLATIONTIMECONSTANT1",
-        1600. * ps
-    );
-
-    scint_mpt->AddConstProperty(
-        "RESOLUTIONSCALE",
-        1.0
-    );
-
-    EJ232->SetMaterialPropertiesTable(scint_mpt);
-
-    return EJ232;
-}
-
-

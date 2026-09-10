@@ -18,6 +18,9 @@
 #include "G4Box.hh"
 #include "G4Electron.hh"
 #include "G4VProcess.hh"
+#include "G4OpBoundaryProcess.hh"
+#include "G4ProcessManager.hh"
+#include "G4ProcessVector.hh"
 
 #include <cmath>
 
@@ -39,6 +42,9 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
         G4RunManager::GetRunManager()->GetUserDetectorConstruction());
         
         fScoringVolume = detConstruction->GetScoringVolume();
+
+        fTopCollectorPhysical = detConstruction->GetTopCollectorPhysical();
+        fBottomCollectorPhysical = detConstruction->GetBottomCollectorPhysical();
 
         auto* boxSolid = dynamic_cast<G4Box*>(fScoringVolume->GetSolid());
 
@@ -120,6 +126,29 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
         return;
     }
 
+    // Determine status of optical boundary process
+    G4OpBoundaryProcessStatus boundaryStatus = Undefined;
+
+    auto* processManager = G4OpticalPhoton::OpticalPhotonDefinition()->GetProcessManager();
+
+    auto* processVector = processManager->GetPostStepProcessVector(typeDoIt);
+
+    const G4int numberOfProcesses = processVector->entries();
+
+    for (G4int i = 0; i < numberOfProcesses; ++i)
+    {
+        auto* process = (*processVector)[i];
+
+        auto* boundaryProcess = dynamic_cast<G4OpBoundaryProcess*>(process);
+
+        if (boundaryProcess)
+        {
+            boundaryStatus = boundaryProcess->GetStatus();
+            break;
+        }
+    }
+
+    // Get the position of the step point
     const G4double y = postPoint->GetPosition().y();
 
     const G4double tolerance = 5.0 * G4GeometryTolerance::GetInstance()->GetSurfaceTolerance();
@@ -147,6 +176,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     const G4double photonFlightTime = track->GetLocalTime();
 
     const auto* event = G4RunManager::GetRunManager()->GetCurrentEvent();
+    
     if (!event)
     {
         return;
@@ -154,36 +184,57 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     
     const G4int eventID = event->GetEventID();
 
-    G4String hitType;
-
-    if (std::abs(y - halfY) < tolerance)
+    if (boundaryStatus != Detection)
     {
-        // true nur beim ersten Hit dieses Photons
-        if (!fEventAction->RegisterTopPhoton(trackID, globalTime))
-        {
-            return;
-        }
-
-        hitType = "top";
-    } else if (std::abs(y + halfY) < tolerance)
-    {
-        if (!fEventAction->RegisterBottomPhoton(trackID, globalTime))
-        {
-            return;
-        }
-
-        hitType = "bottom";
-    } else {
         return;
     }
+
+    G4String hitType;
+
+    if (postVolume == fTopCollectorPhysical)
+    {
+        hitType = "top";
+    }
+
+    else if (postVolume == fBottomCollectorPhysical)
+    {
+        hitType = "bottom";
+    }
+
+    else
+    {
+        return;
+    }
+
+    // Detection is terminal
+    track->SetTrackStatus(fStopAndKill);
 
     // Get and store the process name, later to filter only scintillation photons
     const auto* creatorProcess = track->GetCreatorProcess();
 
     G4String creatorName = "unknown";
+
     if (creatorProcess)
     {
         creatorName = creatorProcess->GetProcessName();
+    }
+
+
+    // Prevent double counting
+
+    if (hitType == "top")
+    {
+        if (!fEventAction->RegisterTopPhoton(trackID, globalTime))
+        {
+            return;
+        }
+    }
+    else
+    {
+        if (!fEventAction->RegisterBottomPhoton(trackID, globalTime))
+        {
+            return;
+        }
     }
 
     // Get runID

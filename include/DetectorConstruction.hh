@@ -26,11 +26,21 @@ class DetectorConstruction final : public G4VUserDetectorConstruction
         
         void ConstructSDandField() override;
 
+        G4VPhysicalVolume* GetTopCollectorPhysical() const
+        {
+            return fTopCollectorPhysical;
+        }
+
+        G4VPhysicalVolume* GetBottomCollectorPhysical() const
+        {
+            return fBottomCollectorPhysical;
+        }
+
     private:
         G4LogicalVolume* fScintillatorLogical = nullptr;
 
-        G4Material* CreateEJ232();
-        G4Material* CreateAir();
+        G4VPhysicalVolume* fTopCollectorPhysical = nullptr;
+        G4VPhysicalVolume* fBottomCollectorPhysical = nullptr;
 
     protected:
         G4LogicalVolume* fScoringVolume = nullptr;

@@ -6,11 +6,11 @@ project(FirstSimulation)
 find_package(Geant4 REQUIRED ui_all vis_all)
 
 # Location of the soruces and header files fpr this project
-file(GLOB sources
+file(GLOB sources CONFIGURE_DEPENDS
     ${PROJECT_SOURCE_DIR}/src/*.cc
 )
 
-file(GLOB headers
+file(GLOB headers CONFIGURE_DEPENDS
     ${PROJECT_SOURCE_DIR}/include/*.hh
 )
 

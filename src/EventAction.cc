@@ -38,7 +38,8 @@ void EventAction::EndOfEventAction(const G4Event* event)
 
     G4cout
     << "Event " << eventID
-    << ": N_top=" << fNTop
+    << ": Counts:"
+    << "  N_top=" << fNTop
     << ", N_bottom=" << fNBottom
     << ", N_total=" << (fNTop + fNBottom)
     << G4endl;
@@ -101,7 +102,7 @@ G4bool EventAction::RegisterBottomPhoton(G4int trackID, G4double time)
 
 void EventAction::SetElectronEntryTime(G4double time)
 {
-    if (fElectronTimeSet)
+    if (fElectronTimeSet) 
         return;
 
     fElectronEntryTime = time;

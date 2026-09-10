@@ -6,6 +6,7 @@
 #include "globals.hh"
 
 class G4LogicalVolume;
+class G4VPhysicalVolume;
 class G4Step;
 class EventAction;
 
@@ -22,6 +23,9 @@ class SteppingAction : public G4UserSteppingAction
   private:
     EventAction* fEventAction = nullptr;
     G4LogicalVolume* fScoringVolume = nullptr;
+
+    G4VPhysicalVolume* fTopCollectorPhysical = nullptr;
+    G4VPhysicalVolume* fBottomCollectorPhysical = nullptr;
 
     G4double fScintHalfX = 0.0;
     G4double fScintHalfY = 0.0;

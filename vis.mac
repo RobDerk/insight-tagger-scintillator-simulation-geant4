@@ -6,14 +6,23 @@
 
 /vis/scene/add/trajectories rich smooth
 
-# Draw only optical photons created by the Cerenkov process.
-/vis/filtering/trajectories/create/particleFilter
-/vis/filtering/trajectories/particleFilter-0/add opticalphoton
-/vis/filtering/trajectories/create/attributeFilter
-/vis/filtering/trajectories/attributeFilter-0/setAttribute CPN
-/vis/filtering/trajectories/attributeFilter-0/addValue Cerenkov
-/vis/filtering/trajectories/mode hard
+# BEGIN TEMPORARY: draw only the electron and Cerenkov trajectories.
+# Comment out this complete block later to draw all trajectories again.
+# /vis/filtering/trajectories/create/particleFilter
+# /vis/filtering/trajectories/particleFilter-0/add opticalphoton
+# /vis/filtering/trajectories/particleFilter-0/add e-
+# /vis/filtering/trajectories/create/attributeFilter
+# /vis/filtering/trajectories/attributeFilter-0/setAttribute CPN
+# /vis/filtering/trajectories/attributeFilter-0/addValue Cerenkov
+# /vis/filtering/trajectories/attributeFilter-0/addValue None
+# /vis/filtering/trajectories/mode hard
+# END TEMPORARY TRAJECTORY FILTER
 
 /vis/scene/endOfEventAction refresh
 
-# /run/beamOn 1
+# BEGIN TEMPORARY: electron incidence angle is 40 degrees in the y-z plane.
+# The angle is measured from the original +z beam direction.
+# /gun/direction 0.0 0.642788 0.766044
+# END TEMPORARY ELECTRON ANGLE
+
+/run/beamOn 1
