@@ -49,6 +49,11 @@ void EventAction::EndOfEventAction(const G4Event* event)
 
 G4bool EventAction::RegisterTopPhoton(G4int trackID, G4double time)
 {
+    if (!fElectronTimeSet)
+    {
+        return false;
+    }
+
     const auto result = fCountedPhotons.insert(trackID);
 
     if (!result.second)
@@ -70,6 +75,11 @@ G4bool EventAction::RegisterTopPhoton(G4int trackID, G4double time)
 
 G4bool EventAction::RegisterBottomPhoton(G4int trackID, G4double time)
 {
+    if (!fElectronTimeSet)
+    {
+        return false;
+    }
+
     const auto result = fCountedPhotons.insert(trackID);
 
     if (!result.second)

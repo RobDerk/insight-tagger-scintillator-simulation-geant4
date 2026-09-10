@@ -92,6 +92,14 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
         return;
     }
 
+    // track only photons that were created inside the scintillator
+    const auto* birthVolume = track->GetLogicalVolumeAtVertex();
+
+    if (birthVolume != fScoringVolume)
+    {
+        return;
+    }
+
     // check if we are in scoring volume
     // Photon must come from inside the scintillator.
     if (volume != fScoringVolume)

@@ -37,7 +37,6 @@ target_link_libraries(
 add_custom_target(FirstSimulation DEPENDS Scintillation_Simulation)
 
 set(FSIM_MACROS
-    init_vis.mac
     run.mac
     vis.mac
 )

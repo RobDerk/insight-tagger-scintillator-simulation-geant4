@@ -6,8 +6,14 @@
 
 /vis/scene/add/trajectories rich smooth
 
-/vis/scene/endOfEventAction refresh
+# Draw only optical photons created by the Cerenkov process.
+/vis/filtering/trajectories/create/particleFilter
+/vis/filtering/trajectories/particleFilter-0/add opticalphoton
+/vis/filtering/trajectories/create/attributeFilter
+/vis/filtering/trajectories/attributeFilter-0/setAttribute CPN
+/vis/filtering/trajectories/attributeFilter-0/addValue Cerenkov
+/vis/filtering/trajectories/mode hard
 
-/tracking/storeTrajectory 1
+/vis/scene/endOfEventAction refresh
 
 # /run/beamOn 1
