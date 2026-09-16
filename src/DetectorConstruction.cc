@@ -117,7 +117,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     fScoringVolume = fScintillatorLogical;
 
     // Ideal photon collection surfaces
-
     const G4double collectorHalfThickness = 0.5 * um;
 
     // Same x/z size as scintillator end face
