@@ -237,12 +237,12 @@ namespace OpticalMaterials
 
         scintillatorMPT->AddConstProperty(
             "SCINTILLATIONRISETIME1",
-            1600. * ps
+            350. * ps
         );
 
         scintillatorMPT->AddConstProperty(
             "SCINTILLATIONTIMECONSTANT1",
-            350. * ps
+            1600. * ps
         );
 
         scintillatorMPT->AddConstProperty(
