@@ -209,7 +209,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     // Detection is terminal
     track->SetTrackStatus(fStopAndKill);
 
-    // Get and store the process name, later to filter only scintillation photons
+    // Get and store the process name
     const auto* creatorProcess = track->GetCreatorProcess();
 
     G4String creatorName = "unknown";

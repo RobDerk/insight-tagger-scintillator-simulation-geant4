@@ -2,7 +2,7 @@
 #define DetectorConstruction_hh 1
 
 #include "G4VUserDetectorConstruction.hh"
-
+#include "OpticalMaterials.hh"
 #include "G4SystemOfUnits.hh"
 
 #include "globals.hh"

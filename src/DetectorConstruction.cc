@@ -71,6 +71,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     //
 
     auto* scintillator_material = OpticalMaterials::CreateEJ232();
+    // auto* scintillator_material = OpticalMaterials::Saphir_Glass();
 
     // Scintillator size
     G4double scint_size_x = 7 * mm; // length

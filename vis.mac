@@ -4,7 +4,22 @@
 /vis/drawVolume
 /vis/viewer/set/autoRefresh true
 
+# Hide the World volume's outline; it is only a container, not a real detector part.
+# /vis/geometry/set/visibility World 0 false
+
 /vis/scene/add/trajectories rich smooth
+
+# Draw electron trajectories thicker than other particles.
+# "set" captures the *current* default line width, so bump it up only
+# right before registering e-, then restore it for everything else.
+# /vis/modeling/trajectories/create/drawByParticleID
+# /vis/modeling/trajectories/drawByParticleID-0/default/setLineWidth 5
+# /vis/modeling/trajectories/drawByParticleID-0/set opticalphoton cyan
+# /vis/modeling/trajectories/drawByParticleID-0/default/setLineWidth 3
+# /vis/modeling/trajectories/drawByParticleID-0/set e- red
+# /vis/modeling/trajectories/drawByParticleID-0/default/setLineWidth 1
+# /vis/modeling/trajectories/list
+# /vis/modeling/trajectories/select drawByParticleID-0
 
 # BEGIN TEMPORARY: draw only the electron and Cerenkov trajectories.
 # Comment out this complete block later to draw all trajectories again.

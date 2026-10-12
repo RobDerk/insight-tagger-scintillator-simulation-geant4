@@ -326,4 +326,99 @@ namespace OpticalMaterials
 
         return detectorSurface;
     }
+
+    G4Material* Saphir_Glass()
+    {
+        auto* nist = G4NistManager::Instance();
+        auto* silicon = nist->FindOrBuildElement("Si");
+        auto* oxygen = nist->FindOrBuildElement("O");
+
+        auto* saphirGlass = new G4Material("Saphir_Glass", 2.2 * g / cm3, 2);
+        saphirGlass->AddElement(silicon, 1);
+        saphirGlass->AddElement(oxygen, 2);
+
+        // Range extended down to 200 nm; sapphire remains transparent well into the UV.
+        std::vector<G4double> photonEnergy = {
+            1.7712 * eV,
+            1.8368 * eV,
+            1.9074 * eV,
+            1.9837 * eV,
+            2.0664 * eV,
+            2.1562 * eV,
+            2.2543 * eV,
+            2.3616 * eV,
+            2.4797 * eV,
+            2.6102 * eV,
+            2.6953 * eV,
+            2.7552 * eV,
+            2.8178 * eV,
+            2.8834 * eV,
+            2.9520 * eV,
+            3.0240 * eV,
+            3.0996 * eV,
+            3.1388 * eV,
+            3.1791 * eV,
+            3.2204 * eV,
+            3.2627 * eV,
+            3.3062 * eV,
+            3.3509 * eV,
+            3.3968 * eV,
+            3.4440 * eV,
+            3.4925 * eV,
+            3.5424 * eV,
+            3.5937 * eV,
+            3.6466 * eV,
+            3.7010 * eV,
+            3.7571 * eV,
+            3.8149 * eV,
+            3.8745 * eV,
+            3.9360 * eV,
+            3.9995 * eV,
+            4.0651 * eV,
+            4.1328 * eV,
+            4.2028 * eV,
+            4.2753 * eV,
+            4.3503 * eV,
+            4.4280 * eV,
+            4.5085 * eV,
+            4.5920 * eV,
+            4.6786 * eV,
+            4.7686 * eV,
+            4.8621 * eV,
+            4.9594 * eV,
+            5.0606 * eV,
+            5.1660 * eV,
+            5.2759 * eV,
+            5.3906 * eV,
+            5.5104 * eV,
+            5.6356 * eV,
+            5.7667 * eV,
+            5.9040 * eV,
+            6.0480 * eV,
+            6.1992 * eV
+        };
+
+        const std::vector<G4double> refractiveIndex(photonEnergy.size(), 1.77);
+
+        const std::vector<G4double> absLength(photonEnergy.size(), 5.0 * m);
+
+        auto* saphirGlassMPT = new G4MaterialPropertiesTable();
+
+        saphirGlassMPT->AddProperty(
+            "RINDEX",
+            photonEnergy,
+            refractiveIndex
+        );
+        
+        saphirGlassMPT->AddProperty(
+            "ABSLENGTH",
+            photonEnergy,
+            absLength
+        );
+
+        saphirGlass->SetMaterialPropertiesTable(saphirGlassMPT);
+
+        return saphirGlass;
+
+    }
 }
