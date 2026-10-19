@@ -1,4 +1,4 @@
-# Scintillation_Simulation
+# Scintillation Simulation
 
 Geant4-Simulation eines Plastikszintillator, der von einem Elektronenstrahl getroffen wird. Erzeugte optische Photonen (Szintillation und Cherenkov) werden im Szintillator transportiert und an den beiden Flächen (oben / unten) von "idealen Photonendetektoren" gezählt.
 
