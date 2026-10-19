@@ -21,6 +21,10 @@
 #include "G4OpBoundaryProcess.hh"
 #include "G4ProcessManager.hh"
 #include "G4ProcessVector.hh"
+#include "G4PrimaryVertex.hh"
+#include "G4PrimaryParticle.hh"
+
+#include <algorithm>
 
 #include <cmath>
 
@@ -256,6 +260,19 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
         }
     }
 
+    // Emission angle between photon creation direction and primary beam direction
+    G4double emissionAngle = 0.0;
+
+    if (const auto* vertex = event->GetPrimaryVertex(0))
+    {
+        if (const auto* primary = vertex->GetPrimary(0))
+        {
+            const G4double cosTheta = track->GetVertexMomentumDirection().dot(primary->GetMomentumDirection().unit());
+
+            emissionAngle = std::acos(std::max(-1.0, std::min(1.0, cosTheta)));
+        }
+    }
+
     // Get runID
     const G4int runID = G4RunManager::GetRunManager()->GetCurrentRun()->GetRunID();
 
@@ -278,6 +295,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     analysisManager->FillNtupleSColumn(10, creatorName);
     analysisManager->FillNtupleIColumn(11, fEventAction->GetSideReflections(trackID));
     analysisManager->FillNtupleDColumn(12, 2. * fScintHalfY / mm);
+    analysisManager->FillNtupleDColumn(13, emissionAngle / deg);
 
     analysisManager->AddNtupleRow();
 

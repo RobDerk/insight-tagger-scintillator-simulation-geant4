@@ -50,6 +50,7 @@ RunAction::RunAction()
     analysisManager->CreateNtupleSColumn("creatorProcess");
     analysisManager->CreateNtupleIColumn("nSideReflections");
     analysisManager->CreateNtupleDColumn("scintLength");
+    analysisManager->CreateNtupleDColumn("emissionAngle");
 
     analysisManager->FinishNtuple();
 }
