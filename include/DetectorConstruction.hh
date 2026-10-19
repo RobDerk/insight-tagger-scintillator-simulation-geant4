@@ -14,7 +14,8 @@ class G4Material;
 class DetectorConstruction final : public G4VUserDetectorConstruction
 {
     public:
-        explicit DetectorConstruction(G4double scintHalfLengthY = 35 * mm);
+        // scintLengthY: full length; halved internally for G4Box
+        explicit DetectorConstruction(G4double scintLengthY = 70 * mm);
         ~DetectorConstruction() override;
 
         virtual G4VPhysicalVolume* Construct() override;
@@ -37,8 +38,8 @@ class DetectorConstruction final : public G4VUserDetectorConstruction
         }
 
     private:
-        // Half-length of the scintillator along y (photon transport direction)
-        G4double fScintHalfLengthY = 35 * mm;
+        // Full length of the scintillator along y (photon transport direction)
+        G4double fScintLengthY = 70 * mm;
 
         G4LogicalVolume* fScintillatorLogical = nullptr;
 

@@ -29,10 +29,10 @@ int main(int argc, char** argv)
     G4double energyValue = 1.0;
     G4String energyUnit = "GeV";
 
-    // Half-length of the scintillator along y
-    G4double scintLengthValue = 35.0;
+    // Full length of the scintillator along y
+    G4double scintLengthValue = 70.0;
     G4String scintLengthUnit = "mm";
-    G4double scintLength = 35.0 * mm;
+    G4double scintLength = 70.0 * mm;
 
     // =========================================================
     // Command line arguments (batch mode)
@@ -143,10 +143,10 @@ int main(int argc, char** argv)
         scintLength = scintLengthValue * unitFactor;
 
         // The world has a half-size of 100 mm; the end-face collectors must fit inside
-        if (scintLength <= 0.0 || scintLength >= 99.0 * mm)
+        if (scintLength <= 0.0 || scintLength >= 198.0 * mm)
         {
             G4cerr
-                << "Scintillator length must be > 0 and < 99 mm"
+                << "Scintillator length must be > 0 and < 198 mm"
                 << G4endl;
 
             return 1;
@@ -230,7 +230,7 @@ int main(int argc, char** argv)
             << energyValue
             << " "
             << energyUnit
-            << "\nScint half-length (y) : "
+            << "\nScint length (y) : "
             << scintLengthValue
             << " "
             << scintLengthUnit

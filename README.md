@@ -20,7 +20,7 @@ Das Szintillatormaterial ist austauschbar. Aktuell ist EJ-232 hinterlegt; weiter
 
 ## Geometrie (Standardwerte)
 
-Alle Maße sind Halblängen (Geant4 `G4Box`).
+Die Geometrie-Maße in der Tabelle sind Halblängen (Geant4 `G4Box`). Die Szintillatorlänge wird auf der Kommandozeile als volle Länge angegeben und intern halbiert.
 
 | Größe | Wert |
 |---|---|
@@ -70,15 +70,15 @@ Führt `vis.mac` aus (OpenGL-Viewer, 1 Event).
 | `events` | Anzahl Events | `1` |
 | `energie` | Energie des Primärteilchens | `1` |
 | `energieeinheit` | Geant4-Energieeinheit (`eV`, `keV`, `MeV`, `GeV`, ...) | `GeV` |
-| `länge` | Halblänge des Szintillators in y | `35` |
+| `länge` | Volle Länge des Szintillators in y | `70` |
 | `längeneinheit` | `um`, `mm` oder `cm` | `mm` |
 
-Die Länge muss größer als 0 und kleiner als 99 mm sein (Größe der World).
+Die Länge muss größer als 0 und kleiner als 198 mm sein (Größe der World).
 
 Beispiele:
 
 ```bash
-# Standardwerte: 1 Event, 1 GeV, 35 mm
+# Standardwerte: 1 Event, 1 GeV, 70 mm
 ./Scintillation_Simulation run.mac
 
 # 1000 Events mit 500 MeV
