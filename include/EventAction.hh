@@ -5,6 +5,7 @@
 
 #include "globals.hh"
 
+#include <unordered_map>
 #include <unordered_set>
 
 class RunAction;
@@ -49,6 +50,18 @@ class EventAction final : public G4UserEventAction
             return fElectronTimeSet;
         }
 
+        // Reflections of a photon at the scintillator side faces
+        void AddSideReflection(G4int trackID)
+        {
+            ++fSideReflections[trackID];
+        }
+
+        G4int GetSideReflections(G4int trackID) const
+        {
+            const auto it = fSideReflections.find(trackID);
+            return it == fSideReflections.end() ? 0 : it->second;
+        }
+
     private:
         RunAction* fRunAction = nullptr;
 
@@ -61,6 +74,9 @@ class EventAction final : public G4UserEventAction
 
         // photon is counted only once in total: whichever end face it reaches first.
         std::unordered_set<G4int> fCountedPhotons;
+
+        // trackID -> number of side-face reflections
+        std::unordered_map<G4int, G4int> fSideReflections;
 
         // Set the start time when the electron hit the scintillator
         G4double fElectronEntryTime = -1.0;

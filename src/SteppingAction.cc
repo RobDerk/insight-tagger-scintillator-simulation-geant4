@@ -148,6 +148,19 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
         }
     }
 
+    // Count reflections at the side faces (not at the top/bottom collector faces)
+    if (postVolume != fTopCollectorPhysical
+        && postVolume != fBottomCollectorPhysical
+        && (boundaryStatus == FresnelReflection
+            || boundaryStatus == TotalInternalReflection
+            || boundaryStatus == LambertianReflection
+            || boundaryStatus == LobeReflection
+            || boundaryStatus == SpikeReflection
+            || boundaryStatus == BackScattering))
+    {
+        fEventAction->AddSideReflection(track->GetTrackID());
+    }
+
     // Get the position of the step point
     const G4double y = postPoint->GetPosition().y();
 
@@ -257,6 +270,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     analysisManager->FillNtupleDColumn(8, photonFlightTime / ns);
     analysisManager->FillNtupleDColumn(9, photonCreationTime / ns);
     analysisManager->FillNtupleSColumn(10, creatorName);
+    analysisManager->FillNtupleIColumn(11, fEventAction->GetSideReflections(trackID));
 
     analysisManager->AddNtupleRow();
 

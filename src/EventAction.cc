@@ -28,6 +28,7 @@ void EventAction::BeginOfEventAction(const G4Event*)
     fNBottom = 0;
 
     fCountedPhotons.clear();
+    fSideReflections.clear();
 }
 
 void EventAction::EndOfEventAction(const G4Event* event)

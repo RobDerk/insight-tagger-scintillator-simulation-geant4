@@ -48,6 +48,7 @@ RunAction::RunAction()
     analysisManager->CreateNtupleDColumn("photonFlightTime");
     analysisManager->CreateNtupleDColumn("photonCreationTime");
     analysisManager->CreateNtupleSColumn("creatorProcess");
+    analysisManager->CreateNtupleIColumn("nSideReflections");
 
     analysisManager->FinishNtuple();
 }
