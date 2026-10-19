@@ -72,6 +72,12 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
         volume = preVolume->GetLogicalVolume();
     }
 
+    // Sum energy deposit of all particles in the scintillator
+    if (volume == fScoringVolume)
+    {
+        fEventAction->AddEdep(step->GetTotalEnergyDeposit());
+    }
+
     if (track->GetDefinition() == G4Electron::Definition()
         && track->GetParentID() == 0 // only primary electon
         && !fEventAction->IsElectronEntryTimeSet())
@@ -271,6 +277,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     analysisManager->FillNtupleDColumn(9, photonCreationTime / ns);
     analysisManager->FillNtupleSColumn(10, creatorName);
     analysisManager->FillNtupleIColumn(11, fEventAction->GetSideReflections(trackID));
+    analysisManager->FillNtupleDColumn(12, 2. * fScintHalfY / mm);
 
     analysisManager->AddNtupleRow();
 

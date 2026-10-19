@@ -92,9 +92,6 @@ void EventAction::EndOfEventAction(const G4Event* event)
     << "  Photons N_bottom  : " << fNBottom
     << " (" << bottomFraction << " %)\n"
     << "  Photons N_total   : " << nTotal << "\n"
-    << "  Top/Bottom asym.  : "
-    << std::setprecision(4)
-    << (nTotal > 0 ? static_cast<G4double>(fNTop - fNBottom) / nTotal : 0.) << "\n"
     << "  Simulation time   : " << std::setprecision(3) << wallTime << " s\n"
     << "------------------------------------"
     << std::defaultfloat
