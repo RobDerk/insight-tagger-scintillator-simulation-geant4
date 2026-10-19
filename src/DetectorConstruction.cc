@@ -13,7 +13,8 @@
 #include "G4OpticalSurface.hh"
 #include "G4LogicalBorderSurface.hh"
 
-DetectorConstruction::DetectorConstruction()
+DetectorConstruction::DetectorConstruction(G4double scintHalfLengthY)
+    : fScintHalfLengthY(scintHalfLengthY)
 {
 
 }
@@ -75,7 +76,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     // Scintillator size
     G4double scint_size_x = 7 * mm; // length
-    G4double scint_size_y = 35 * mm; // width
+    G4double scint_size_y = fScintHalfLengthY; // half-length between the two end faces
     G4double scint_size_z = 2 * mm; // thickness
 
     // Scintillator Solid Box

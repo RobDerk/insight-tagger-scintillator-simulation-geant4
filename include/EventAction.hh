@@ -5,6 +5,7 @@
 
 #include "globals.hh"
 
+#include <chrono>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -81,6 +82,9 @@ class EventAction final : public G4UserEventAction
         // Set the start time when the electron hit the scintillator
         G4double fElectronEntryTime = -1.0;
         G4bool fElectronTimeSet = false; // check if flag is set
+
+        // Wall-clock start of the event
+        std::chrono::steady_clock::time_point fEventStart;
 };
 
 #endif

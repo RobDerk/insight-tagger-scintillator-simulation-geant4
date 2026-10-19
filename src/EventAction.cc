@@ -2,8 +2,13 @@
 #include "RunAction.hh"
 
 #include "G4Event.hh"
+#include "G4PrimaryParticle.hh"
+#include "G4PrimaryVertex.hh"
 #include "G4ios.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4UnitsTable.hh"
+
+#include <iomanip>
 
 EventAction::EventAction(RunAction* runAction) : fRunAction(runAction)
 {
@@ -18,6 +23,8 @@ EventAction::~EventAction()
 // At the Beginn of the Action, E is zero
 void EventAction::BeginOfEventAction(const G4Event*)
 {
+    fEventStart = std::chrono::steady_clock::now();
+
     fElectronEntryTime = 0.0;
     fElectronTimeSet = false;
 
@@ -37,12 +44,59 @@ void EventAction::EndOfEventAction(const G4Event* event)
 
     fRunAction->WritePhotonCounts(eventID, fNTop, fNBottom);
 
+    const G4double wallTime =
+        std::chrono::duration<G4double>(
+            std::chrono::steady_clock::now() - fEventStart
+        ).count();
+
+    const G4int nTotal = fNTop + fNBottom;
+
+    // Primary particle info
+    G4String particleName = "n/a";
+    G4double primaryEnergy = 0.;
+
+    if (const auto* vertex = event->GetPrimaryVertex())
+    {
+        if (const auto* primary = vertex->GetPrimary())
+        {
+            particleName = primary->GetParticleDefinition()->GetParticleName();
+            primaryEnergy = primary->GetKineticEnergy();
+        }
+    }
+
+    const G4double topFraction = nTotal > 0 ? 100. * fNTop / nTotal : 0.;
+    const G4double bottomFraction = nTotal > 0 ? 100. * fNBottom / nTotal : 0.;
+
     G4cout
-    << "Event " << eventID
-    << ": Counts:"
-    << "  N_top=" << fNTop
-    << ", N_bottom=" << fNBottom
-    << ", N_total=" << (fNTop + fNBottom)
+    << "\n------------------------------------\n"
+    << "Event " << eventID << "\n"
+    << "  Primary           : " << particleName
+    << ", " << G4BestUnit(primaryEnergy, "Energy") << "\n"
+    << "  Energy deposit    : " << G4BestUnit(fEdep, "Energy") << "\n"
+    << "  Electron entry t  : ";
+
+    if (fElectronTimeSet)
+    {
+        G4cout << G4BestUnit(fElectronEntryTime, "Time");
+    }
+    else
+    {
+        G4cout << "not set";
+    }
+
+    G4cout
+    << "\n"
+    << "  Photons N_top     : " << fNTop
+    << " (" << std::fixed << std::setprecision(1) << topFraction << " %)\n"
+    << "  Photons N_bottom  : " << fNBottom
+    << " (" << bottomFraction << " %)\n"
+    << "  Photons N_total   : " << nTotal << "\n"
+    << "  Top/Bottom asym.  : "
+    << std::setprecision(4)
+    << (nTotal > 0 ? static_cast<G4double>(fNTop - fNBottom) / nTotal : 0.) << "\n"
+    << "  Simulation time   : " << std::setprecision(3) << wallTime << " s\n"
+    << "------------------------------------"
+    << std::defaultfloat
     << G4endl;
 
     // energy deposit of electon; accumulate the stats in run action

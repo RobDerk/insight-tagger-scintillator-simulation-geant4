@@ -61,6 +61,8 @@ RunAction::~RunAction()
 void RunAction::BeginOfRunAction(const G4Run* run)
 {
     // inform the runManager to save random number seed
+    fRunStart = std::chrono::steady_clock::now();
+
     G4RunManager::GetRunManager()->SetRandomNumberStore(false);
 
     // intialize the analysis manager to store data for photon hit top or bottom
@@ -131,6 +133,30 @@ void RunAction::EndOfRunAction(const G4Run* run)
     auto analysisManager = G4AnalysisManager::Instance();
     analysisManager->Write();
     analysisManager->CloseFile();
+
+    const G4int nEvents = run->GetNumberOfEvent();
+
+    const G4double runTime =
+        std::chrono::duration<G4double>(
+            std::chrono::steady_clock::now() - fRunStart
+        ).count();
+
+    G4cout
+        << "\n====================================\n"
+        << "Run " << run->GetRunID() << " finished\n"
+        << "  Events            : " << nEvents << "\n"
+        << "  Total Edep        : " << G4BestUnit(edep, "Energy") << "\n"
+        << "  Total sim. time   : " << runTime << " s\n";
+
+    if (nEvents > 0)
+    {
+        G4cout
+            << "  Time per event    : " << runTime / nEvents << " s\n";
+    }
+
+    G4cout
+        << "===================================="
+        << G4endl;
 }
 
 void RunAction::AddEdep(G4double edep)

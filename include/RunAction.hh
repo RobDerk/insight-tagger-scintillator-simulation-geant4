@@ -6,6 +6,8 @@
 
 #include "globals.hh"
 
+#include <chrono>
+
 class G4Run;
 
 class RunAction : public G4UserRunAction
@@ -27,6 +29,8 @@ class RunAction : public G4UserRunAction
   private:
     G4Accumulable<G4double> fEdep = 0.;
     G4Accumulable<G4double> fEdep2 = 0.;
+
+    std::chrono::steady_clock::time_point fRunStart;
 };
 
 #endif
