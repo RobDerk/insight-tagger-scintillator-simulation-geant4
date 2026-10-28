@@ -270,7 +270,7 @@ int main(int argc, char** argv)
                 // Geometry is rebuilt with the new length
                 detector->SetScintLengthY(scintLengths[i], scintUnits[i]);
 
-                uiManager->ApplyCommand("/run/reinitialize");
+                uiManager->ApplyCommand("/run/reinitializeGeometry true");
             }
 
             G4cout

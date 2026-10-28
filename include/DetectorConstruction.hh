@@ -36,7 +36,7 @@ class DetectorConstruction final : public G4VUserDetectorConstruction
         
         void ConstructSDandField() override;
 
-        // Takes effect after /run/reinitialize
+        // Takes effect after /run/reinitializeGeometry
         void SetScintLengthY(G4double length, const G4String& unit)
         {
             fScintLengthY = length;
