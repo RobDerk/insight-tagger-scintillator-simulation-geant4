@@ -61,7 +61,7 @@ Führt `vis.mac` aus (OpenGL-Viewer, 1 Event).
 ### Batch-Modus
 
 ```bash
-./Scintillation_Simulation <macro> [events] [energie] [energieeinheit] [längen] [längeneinheit]
+./Scintillation_Simulation <macro> [events] [energie] [energieeinheit] [längen]
 ```
 
 | Argument | Bedeutung | Standard |
@@ -70,8 +70,7 @@ Führt `vis.mac` aus (OpenGL-Viewer, 1 Event).
 | `events` | Anzahl Events | `1` |
 | `energie` | Energie des Primärteilchens | `1` |
 | `energieeinheit` | Geant4-Energieeinheit (`eV`, `keV`, `MeV`, `GeV`, ...) | `GeV` |
-| `längen` | Volle Länge des Szintillators in y; ein Wert oder Liste mit Komma (`100,70,50` oder `"[100mm,7cm]"`), pro Länge ein Run | `70` |
-| `längeneinheit` | `um`, `mm` oder `cm` für Einträge ohne eigene Einheit | `mm` |
+| `längen` | Volle Länge des Szintillators in y als Liste in Anführungszeichen, z. B. `"[70mm,100mm]"`; Einheit (`um`, `mm`, `cm`) pro Eintrag Pflicht, pro Länge ein Run | `"[70mm]"` |
 
 Jede Länge muss größer als 0 und kleiner als 198 mm sein (Größe der World).
 
@@ -85,11 +84,10 @@ Beispiele:
 ./Scintillation_Simulation run.mac 1000 500 MeV
 
 # 1000 Events, 1 GeV, Szintillatorlänge 50 mm
-./Scintillation_Simulation run.mac 1000 1 GeV 50 mm
+./Scintillation_Simulation run.mac 1000 1 GeV "[50mm]"
 
 # Mehrere Längen: je ein Run mit 100, 70 und 50 mm
-./Scintillation_Simulation run.mac 1000 1 GeV 100,70,50 mm
-./Scintillation_Simulation run.mac 1000 1 GeV "[100mm,7cm,50mm]"
+./Scintillation_Simulation run.mac 1000 1 GeV "[100mm,70mm,50mm]"
 ```
 
 ## Ausgabe

@@ -15,24 +15,29 @@
 #include "PhysicsList.hh"
 
 
-// Parses "70", "100,70,50" or "[100mm,7cm]"; entries without unit use defaultUnit.
+// Parses "[100mm,7cm,70mm]"; brackets and a unit (um, mm, cm) per entry are required.
 // The world has a half-size of 100 mm; the end-face collectors must fit inside.
 static bool ParseLengths(
     const std::string& text,
-    const std::string& defaultUnit,
     std::vector<G4double>& lengths)
 {
     std::string cleaned;
 
     for (const char c : text)
     {
-        if (c != '[' && c != ']' && c != ' ')
+        if (c != ' ')
         {
             cleaned += c;
         }
     }
 
-    std::istringstream stream(cleaned);
+    if (cleaned.size() < 2 || cleaned.front() != '[' || cleaned.back() != ']')
+    {
+        G4cerr << "Lengths must be given as [70mm,100mm,...]: " << text << G4endl;
+        return false;
+    }
+
+    std::istringstream stream(cleaned.substr(1, cleaned.size() - 2));
     std::string token;
 
     while (std::getline(stream, token, ','))
@@ -50,12 +55,7 @@ static bool ParseLengths(
             return false;
         }
 
-        std::string unit = token.substr(pos);
-
-        if (unit.empty())
-        {
-            unit = defaultUnit;
-        }
+        const std::string unit = token.substr(pos);
 
         G4double unitFactor = 0.0;
 
@@ -64,7 +64,7 @@ static bool ParseLengths(
         else if (unit == "cm") unitFactor = cm;
         else
         {
-            G4cerr << "Invalid length unit: " << unit << " (use um, mm or cm)" << G4endl;
+            G4cerr << "Invalid or missing length unit in '" << token << "' (use um, mm or cm)" << G4endl;
             return false;
         }
 
@@ -88,8 +88,8 @@ static bool ParseLengths(
     return true;
 }
 
-// Usage (batch): ./Scintillation_Simulation <macro> [events] [energy] [energyUnit] [lengths] [lengthUnit]
-// lengths: single value or comma separated list, e.g. 70 or 100,70,50 or "[100mm,70mm]"; one run per length.
+// Usage (batch): ./Scintillation_Simulation <macro> [events] [energy] [energyUnit] [lengths]
+// lengths: "[70mm,100mm,...]" (quoted, unit required per entry); one run per length.
 // No arguments: interactive UI mode with vis.mac.
 int main(int argc, char** argv)
 {
@@ -106,8 +106,7 @@ int main(int argc, char** argv)
     G4String energyUnit = "GeV";
 
     // Full lengths of the scintillator along y, one run per entry
-    std::string scintLengthText = "70";
-    std::string scintLengthUnit = "mm";
+    std::string scintLengthText = "[70mm]";
     std::vector<G4double> scintLengths = {70.0 * mm};
 
     // =========================================================
@@ -182,14 +181,9 @@ int main(int argc, char** argv)
             scintLengthText = argv[5];
         }
 
-        if (argc >= 7)
-        {
-            scintLengthUnit = argv[6];
-        }
-
         scintLengths.clear();
 
-        if (!ParseLengths(scintLengthText, scintLengthUnit, scintLengths))
+        if (!ParseLengths(scintLengthText, scintLengths))
         {
             return 1;
         }

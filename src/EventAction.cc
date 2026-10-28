@@ -1,10 +1,12 @@
 #include "EventAction.hh"
 #include "RunAction.hh"
+#include "DetectorConstruction.hh"
 
 #include "G4Event.hh"
 #include "G4ParticleDefinition.hh"
 #include "G4PrimaryParticle.hh"
 #include "G4PrimaryVertex.hh"
+#include "G4RunManager.hh"
 #include "G4ios.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4UnitsTable.hh"
@@ -55,6 +57,13 @@ void EventAction::EndOfEventAction(const G4Event* event)
     // Primary particle info
     G4String particleName = "n/a";
     G4double primaryEnergy = 0.;
+    G4double fScintLengthY = 0.;
+
+    if (const auto* detector = static_cast<const DetectorConstruction*>(
+        G4RunManager::GetRunManager()->GetUserDetectorConstruction()))
+    {
+        fScintLengthY = detector->GetScintLengthY();
+    }
 
     if (const auto* vertex = event->GetPrimaryVertex())
     {
@@ -71,8 +80,9 @@ void EventAction::EndOfEventAction(const G4Event* event)
     G4cout
     << "\n------------------------------------\n"
     << "Event " << eventID << "\n"
-    << "  Primary           : " << particleName
-    << ", " << G4BestUnit(primaryEnergy, "Energy") << "\n"
+    << "  Primary Particle  : " << particleName << "\n"
+    << "  Primary Energy    : " << G4BestUnit(primaryEnergy, "Energy") << "\n"
+    << "  Length Y          : " << G4BestUnit(fScintLengthY, "Length") << "\n"
     << "  Energy deposit    : " << G4BestUnit(fEdep, "Energy") << "\n"
     << "  Electron entry t  : ";
 
