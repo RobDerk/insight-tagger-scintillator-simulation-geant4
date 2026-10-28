@@ -31,6 +31,9 @@ class RunAction : public G4UserRunAction
     G4Accumulable<G4double> fEdep2 = 0.;
 
     std::chrono::steady_clock::time_point fRunStart;
+
+    // Base name of the current run's CSV, e.g. "70mm"
+    G4String fBaseName;
 };
 
 #endif

@@ -28,6 +28,12 @@ target_include_directories(
     include
 )
 
+target_compile_definitions(
+    Scintillation_Simulation
+    PRIVATE
+    PDE_DATA_DIR="${PROJECT_SOURCE_DIR}/data"
+)
+
 target_link_libraries(
     Scintillation_Simulation
     PRIVATE

@@ -40,8 +40,13 @@ SteppingAction::~SteppingAction()
 
 void SteppingAction::UserSteppingAction(const G4Step* step)
 {
-    if (!fScoringVolume)
+    // Geometry is rebuilt between runs, so the cached pointers must be refreshed
+    const G4int currentRunID = G4RunManager::GetRunManager()->GetCurrentRun()->GetRunID();
+
+    if (!fScoringVolume || currentRunID != fCachedRunID)
     {
+        fCachedRunID = currentRunID;
+
         const auto detConstruction = static_cast<const DetectorConstruction*>(
         G4RunManager::GetRunManager()->GetUserDetectorConstruction());
         

@@ -169,9 +169,13 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
         checkOverlaps
     );
 
+    // Create ideal photon detector surface using PDE data for the AFBR-S4N44P014M NUV-MT Silicon Photomultiplier
     auto* idealDetectorSurface =
-        OpticalMaterials::CreateIdealPhotonDetectorSurface();
+        OpticalMaterials::CreateIdealPhotonDetectorSurface(
+            G4String(PDE_DATA_DIR) + "/PDE_afbr-s4n44p01M_extracted.txt"
+        );
 
+    // Attach the ideal photon detector surface to the scintillator-collector interfaces
     new G4LogicalBorderSurface(
         "ScintillatorToTopCollectorSurface",
         scintillatorPhysical,

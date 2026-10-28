@@ -61,7 +61,7 @@ Führt `vis.mac` aus (OpenGL-Viewer, 1 Event).
 ### Batch-Modus
 
 ```bash
-./Scintillation_Simulation <macro> [events] [energie] [energieeinheit] [länge] [längeneinheit]
+./Scintillation_Simulation <macro> [events] [energie] [energieeinheit] [längen] [längeneinheit]
 ```
 
 | Argument | Bedeutung | Standard |
@@ -70,10 +70,10 @@ Führt `vis.mac` aus (OpenGL-Viewer, 1 Event).
 | `events` | Anzahl Events | `1` |
 | `energie` | Energie des Primärteilchens | `1` |
 | `energieeinheit` | Geant4-Energieeinheit (`eV`, `keV`, `MeV`, `GeV`, ...) | `GeV` |
-| `länge` | Volle Länge des Szintillators in y | `70` |
-| `längeneinheit` | `um`, `mm` oder `cm` | `mm` |
+| `längen` | Volle Länge des Szintillators in y; ein Wert oder Liste mit Komma (`100,70,50` oder `"[100mm,7cm]"`), pro Länge ein Run | `70` |
+| `längeneinheit` | `um`, `mm` oder `cm` für Einträge ohne eigene Einheit | `mm` |
 
-Die Länge muss größer als 0 und kleiner als 198 mm sein (Größe der World).
+Jede Länge muss größer als 0 und kleiner als 198 mm sein (Größe der World).
 
 Beispiele:
 
@@ -86,12 +86,16 @@ Beispiele:
 
 # 1000 Events, 1 GeV, Szintillatorlänge 50 mm
 ./Scintillation_Simulation run.mac 1000 1 GeV 50 mm
+
+# Mehrere Längen: je ein Run mit 100, 70 und 50 mm
+./Scintillation_Simulation run.mac 1000 1 GeV 100,70,50 mm
+./Scintillation_Simulation run.mac 1000 1 GeV "[100mm,7cm,50mm]"
 ```
 
 ## Ausgabe
 
 - Konsole: pro Event Primärteilchen, Energiedeposition, Zeit des Elektroneneintritts, Photonenzahlen oben/unten/gesamt, Asymmetrie und Rechenzeit. Am Ende jedes Runs Gesamt- und Zeit pro Event.
-- Dateien: CSV-Dateien im Ordner `data/` (`photon_run_<runID>_<Zeitstempel>_*.csv`) mit je einem Eintrag pro Photon-Treffer:
+- Dateien: CSV-Dateien im Ordner `data/` (`<länge>mm.csv`, z. B. `70mm.csv`; gleiche Länge überschreibt die Datei) mit je einem Eintrag pro Photon-Treffer:
 
 | Spalte | Inhalt |
 |---|---|

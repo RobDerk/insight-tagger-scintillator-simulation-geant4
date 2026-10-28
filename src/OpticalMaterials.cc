@@ -7,7 +7,49 @@
 #include "G4PhysicalConstants.hh"
 #include "G4SystemOfUnits.hh"
 
+#include "G4Exception.hh"
+
+#include <algorithm>
+#include <fstream>
+#include <sstream>
 #include <vector>
+
+namespace
+{
+    // Returns energy-ascending vectors, as required by G4MaterialPropertyVector
+    bool LoadPDE(const G4String& path,
+                 std::vector<G4double>& energy,
+                 std::vector<G4double>& pde)
+    {
+        std::ifstream in(path);
+
+        if (!in)
+        {
+            return false;
+        }
+
+        std::string line;
+        std::getline(in, line); // header
+
+        while (std::getline(in, line))
+        {
+            std::istringstream iss(line);
+            G4double lambdaNm = 0.0;
+            G4double value = 0.0;
+
+            if (iss >> lambdaNm >> value && lambdaNm > 0.0)
+            {
+                energy.push_back(h_Planck * c_light / (lambdaNm * nm));
+                pde.push_back(value);
+            }
+        }
+
+        std::reverse(energy.begin(), energy.end());
+        std::reverse(pde.begin(), pde.end());
+
+        return !energy.empty();
+    }
+}
 
 namespace OpticalMaterials
 {
@@ -70,6 +112,11 @@ namespace OpticalMaterials
 
     G4Material* CreateEJ232()
     {
+        if (auto* existing = G4Material::GetMaterial("EJ232", false))
+        {
+            return existing;
+        }
+
         auto* nist = G4NistManager::Instance();
         auto* hydrogen = nist->FindOrBuildElement("H");
         auto* carbon = nist->FindOrBuildElement("C");
@@ -255,7 +302,7 @@ namespace OpticalMaterials
         return ej232;
     }
 
-    G4OpticalSurface* CreateIdealPhotonDetectorSurface()
+    G4OpticalSurface* CreateIdealPhotonDetectorSurface(const G4String& pdeFile)
     {
         auto* detectorSurface = new G4OpticalSurface("IdealPhotonCollectionSurface");
         
@@ -263,50 +310,20 @@ namespace OpticalMaterials
         detectorSurface->SetModel(glisur);
         detectorSurface->SetFinish(polished);
 
-        const std::vector<G4double> photonEnergy =
+        std::vector<G4double> photonEnergy;
+        std::vector<G4double> efficiency;
+
+        if (!LoadPDE(pdeFile, photonEnergy, efficiency))
         {
-            1.7712 * eV,
-            1.8368 * eV,
-            1.9074 * eV,
-            1.9837 * eV,
-            2.0664 * eV,
-            2.1562 * eV,
-            2.2543 * eV,
-            2.3616 * eV,
-            2.4797 * eV,
-            2.6102 * eV,
-            2.6953 * eV,
-            2.7552 * eV,
-            2.8178 * eV,
-            2.8834 * eV,
-            2.9520 * eV,
-            3.0240 * eV,
-            3.0996 * eV,
-            3.1388 * eV,
-            3.1791 * eV,
-            3.2204 * eV,
-            3.2627 * eV,
-            3.3062 * eV,
-            3.3509 * eV,
-            3.3968 * eV,
-            3.4440 * eV,
-            3.4925 * eV,
-            3.5424 * eV,
-            3.5937 * eV,
-            3.6466 * eV,
-            3.7010 * eV,
-            3.7571 * eV,
-            3.8149 * eV,
-            3.8745 * eV,
-            3.9360 * eV,
-            3.9995 * eV,
-            4.0651 * eV,
-            4.1328 * eV
-        };
+            G4Exception(
+                "OpticalMaterials::CreateIdealPhotonDetectorSurface",
+                "PDE001",
+                FatalException,
+                ("Cannot read PDE file: " + pdeFile).c_str()
+            );
+        }
 
         const std::vector<G4double> reflectivity(photonEnergy.size(), 0.0);
-
-        const std::vector<G4double> efficiency(photonEnergy.size(), 1.0);
 
         auto* detectorMPT = new G4MaterialPropertiesTable();
 

@@ -13,7 +13,9 @@ namespace OpticalMaterials
     G4Material* CreateEJ232();
     G4Material* Saphir_Glass();
 
-    G4OpticalSurface* CreateIdealPhotonDetectorSurface();
+    // PDE file format: two columns, wavelength [nm] and PDE as fraction 0..1
+    // PDE for the AFBR-S4N44P014M NUV-MT Silicon Photomultiplier
+    G4OpticalSurface* CreateIdealPhotonDetectorSurface(const G4String& pdeFile);
 }
 
 #endif

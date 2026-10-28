@@ -72,34 +72,15 @@ void RunAction::BeginOfRunAction(const G4Run* run)
 
     const G4int runID = run->GetRunID();
 
-    // date and time
-    const auto now = std::chrono::system_clock::now();
+    const auto* detector = static_cast<const DetectorConstruction*>(
+        G4RunManager::GetRunManager()->GetUserDetectorConstruction());
 
-    const std::time_t nowTime = std::chrono::system_clock::to_time_t(now);
+    std::ostringstream nameStream;
+    nameStream << detector->GetScintLengthY() / mm << "mm";
 
-    std::tm localTime{};
+    fBaseName = nameStream.str();
 
-    // Linux / Unix
-    localtime_r(&nowTime, &localTime);
-
-    std::ostringstream timeStream;
-
-    timeStream
-        << std::put_time(
-            &localTime,
-            "%Y%m%d_%H%M%S"
-        );
-
-
-    const std::string timestamp = timeStream.str();
-
-    // store data in a csv file
-    const G4String fileName =
-        "photon_run_"
-        + std::to_string(runID)
-        + "_"
-        + timestamp
-        + ".csv";
+    const G4String fileName = fBaseName + ".csv";
 
     G4cout
     << "\n====================================\n"
@@ -135,6 +116,22 @@ void RunAction::EndOfRunAction(const G4Run* run)
     auto analysisManager = G4AnalysisManager::Instance();
     analysisManager->Write();
     analysisManager->CloseFile();
+
+    // Geant4 appends the ntuple name to the file name
+    const std::filesystem::path generated =
+        std::filesystem::path("data") / (fBaseName + "_PhotonHits.csv");
+
+    if (std::filesystem::exists(generated))
+    {
+        std::filesystem::rename(
+            generated,
+            std::filesystem::path("data") / (fBaseName + ".csv")
+        );
+    }
+    else
+    {
+        G4cerr << "WARNING: expected output file not found: " << generated << G4endl;
+    }
 
     const G4int nEvents = run->GetNumberOfEvent();
 

@@ -1,5 +1,7 @@
 #include <iostream>
+#include <sstream>
 #include <string>
+#include <vector>
 
 #include "G4RunManagerFactory.hh"
 #include "G4SteppingVerbose.hh"
@@ -13,7 +15,81 @@
 #include "PhysicsList.hh"
 
 
-// Usage (batch): ./Scintillation_Simulation <macro> [events] [energy] [energyUnit] [length] [lengthUnit]
+// Parses "70", "100,70,50" or "[100mm,7cm]"; entries without unit use defaultUnit.
+// The world has a half-size of 100 mm; the end-face collectors must fit inside.
+static bool ParseLengths(
+    const std::string& text,
+    const std::string& defaultUnit,
+    std::vector<G4double>& lengths)
+{
+    std::string cleaned;
+
+    for (const char c : text)
+    {
+        if (c != '[' && c != ']' && c != ' ')
+        {
+            cleaned += c;
+        }
+    }
+
+    std::istringstream stream(cleaned);
+    std::string token;
+
+    while (std::getline(stream, token, ','))
+    {
+        std::size_t pos = 0;
+        G4double value = 0.0;
+
+        try
+        {
+            value = std::stod(token, &pos);
+        }
+        catch (...)
+        {
+            G4cerr << "Invalid scintillator length: " << token << G4endl;
+            return false;
+        }
+
+        std::string unit = token.substr(pos);
+
+        if (unit.empty())
+        {
+            unit = defaultUnit;
+        }
+
+        G4double unitFactor = 0.0;
+
+        if (unit == "um") unitFactor = um;
+        else if (unit == "mm") unitFactor = mm;
+        else if (unit == "cm") unitFactor = cm;
+        else
+        {
+            G4cerr << "Invalid length unit: " << unit << " (use um, mm or cm)" << G4endl;
+            return false;
+        }
+
+        const G4double length = value * unitFactor;
+
+        if (length <= 0.0 || length >= 198.0 * mm)
+        {
+            G4cerr << "Scintillator length must be > 0 and < 198 mm: " << token << G4endl;
+            return false;
+        }
+
+        lengths.push_back(length);
+    }
+
+    if (lengths.empty())
+    {
+        G4cerr << "No scintillator length given" << G4endl;
+        return false;
+    }
+
+    return true;
+}
+
+// Usage (batch): ./Scintillation_Simulation <macro> [events] [energy] [energyUnit] [lengths] [lengthUnit]
+// lengths: single value or comma separated list, e.g. 70 or 100,70,50 or "[100mm,70mm]"; one run per length.
 // No arguments: interactive UI mode with vis.mac.
 int main(int argc, char** argv)
 {
@@ -29,10 +105,10 @@ int main(int argc, char** argv)
     G4double energyValue = 1.0;
     G4String energyUnit = "GeV";
 
-    // Full length of the scintillator along y
-    G4double scintLengthValue = 70.0;
-    G4String scintLengthUnit = "mm";
-    G4double scintLength = 70.0 * mm;
+    // Full lengths of the scintillator along y, one run per entry
+    std::string scintLengthText = "70";
+    std::string scintLengthUnit = "mm";
+    std::vector<G4double> scintLengths = {70.0 * mm};
 
     // =========================================================
     // Command line arguments (batch mode)
@@ -103,20 +179,7 @@ int main(int argc, char** argv)
 
         if (argc >= 6)
         {
-            try
-            {
-                scintLengthValue =
-                    std::stod(argv[5]);
-            }
-            catch (...)
-            {
-                G4cerr
-                    << "Invalid scintillator length: "
-                    << argv[5]
-                    << G4endl;
-
-                return 1;
-            }
+            scintLengthText = argv[5];
         }
 
         if (argc >= 7)
@@ -124,31 +187,10 @@ int main(int argc, char** argv)
             scintLengthUnit = argv[6];
         }
 
-        G4double unitFactor = 0.0;
+        scintLengths.clear();
 
-        if (scintLengthUnit == "um") unitFactor = um;
-        else if (scintLengthUnit == "mm") unitFactor = mm;
-        else if (scintLengthUnit == "cm") unitFactor = cm;
-        else
+        if (!ParseLengths(scintLengthText, scintLengthUnit, scintLengths))
         {
-            G4cerr
-                << "Invalid length unit: "
-                << scintLengthUnit
-                << " (use um, mm or cm)"
-                << G4endl;
-
-            return 1;
-        }
-
-        scintLength = scintLengthValue * unitFactor;
-
-        // The world has a half-size of 100 mm; the end-face collectors must fit inside
-        if (scintLength <= 0.0 || scintLength >= 198.0 * mm)
-        {
-            G4cerr
-                << "Scintillator length must be > 0 and < 198 mm"
-                << G4endl;
-
             return 1;
         }
     }
@@ -164,9 +206,9 @@ int main(int argc, char** argv)
         );
 
 
-    runManager->SetUserInitialization(
-        new DetectorConstruction(scintLength)
-    );
+    auto detector = new DetectorConstruction(scintLengths.front());
+
+    runManager->SetUserInitialization(detector);
 
     runManager->SetUserInitialization(
         new PhysicsList()
@@ -214,33 +256,41 @@ int main(int argc, char** argv)
             energyCommand
         );
 
-        // Start simulation
+        // Start simulation: one run per scintillator length
 
         const G4String beamOnCommand =
             "/run/beamOn "
             + std::to_string(numberOfEvents);
 
+        for (std::size_t i = 0; i < scintLengths.size(); ++i)
+        {
+            if (i > 0)
+            {
+                // Geometry is rebuilt with the new length
+                detector->SetScintLengthY(scintLengths[i]);
 
-        G4cout
-            << "\n===================================="
-            << "\nStarting simulation"
-            << "\nEvents : "
-            << numberOfEvents
-            << "\nEnergy : "
-            << energyValue
-            << " "
-            << energyUnit
-            << "\nScint length (y) : "
-            << scintLengthValue
-            << " "
-            << scintLengthUnit
-            << "\n====================================\n"
-            << G4endl;
+                uiManager->ApplyCommand("/run/reinitialize");
+            }
 
+            G4cout
+                << "\n===================================="
+                << "\nStarting simulation " << (i + 1) << "/" << scintLengths.size()
+                << "\nEvents : "
+                << numberOfEvents
+                << "\nEnergy : "
+                << energyValue
+                << " "
+                << energyUnit
+                << "\nScint length (y) : "
+                << scintLengths[i] / mm
+                << " mm"
+                << "\n====================================\n"
+                << G4endl;
 
-        uiManager->ApplyCommand(
-            beamOnCommand
-        );
+            uiManager->ApplyCommand(
+                beamOnCommand
+            );
+        }
     }
 
     // UI Mode

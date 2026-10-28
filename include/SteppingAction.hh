@@ -23,6 +23,7 @@ class SteppingAction : public G4UserSteppingAction
   private:
     EventAction* fEventAction = nullptr;
     G4LogicalVolume* fScoringVolume = nullptr;
+    G4int fCachedRunID = -1;
 
     G4VPhysicalVolume* fTopCollectorPhysical = nullptr;
     G4VPhysicalVolume* fBottomCollectorPhysical = nullptr;

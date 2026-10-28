@@ -27,6 +27,17 @@ class DetectorConstruction final : public G4VUserDetectorConstruction
         
         void ConstructSDandField() override;
 
+        // Takes effect after /run/reinitialize
+        void SetScintLengthY(G4double length)
+        {
+            fScintLengthY = length;
+        }
+
+        G4double GetScintLengthY() const
+        {
+            return fScintLengthY;
+        }
+
         G4VPhysicalVolume* GetTopCollectorPhysical() const
         {
             return fTopCollectorPhysical;
