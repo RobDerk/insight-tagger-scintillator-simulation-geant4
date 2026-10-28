@@ -72,7 +72,7 @@ Führt `vis.mac` aus (OpenGL-Viewer, 1 Event).
 | `energieeinheit` | Geant4-Energieeinheit (`eV`, `keV`, `MeV`, `GeV`, ...) | `GeV` |
 | `längen` | Volle Länge des Szintillators in y als Liste in Anführungszeichen, z. B. `"[70mm,100mm]"`; Einheit (`um`, `mm`, `cm`) pro Eintrag Pflicht, pro Länge ein Run | `"[70mm]"` |
 
-Jede Länge muss größer als 0 und kleiner als 198 mm sein (Größe der World).
+Jede Länge muss größer als 0 und kleiner als die World sein (Halbgröße 100 mm, maximal 199.998 mm inklusive der Collector).
 
 Beispiele:
 

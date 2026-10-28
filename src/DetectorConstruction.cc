@@ -13,8 +13,8 @@
 #include "G4OpticalSurface.hh"
 #include "G4LogicalBorderSurface.hh"
 
-DetectorConstruction::DetectorConstruction(G4double scintLengthY)
-    : fScintLengthY(scintLengthY)
+DetectorConstruction::DetectorConstruction(G4double scintLengthY, const G4String& scintLengthUnit)
+    : fScintLengthY(scintLengthY), fScintLengthUnit(scintLengthUnit)
 {
 
 }
@@ -36,9 +36,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     auto* world_material = OpticalMaterials::CreateAir();
 
     // World size
-    G4double world_size_x = 10 * cm;
-    G4double world_size_y = 10 * cm;
-    G4double world_size_z = 10 * cm;
+    G4double world_size_x = kWorldHalfSize;
+    G4double world_size_y = kWorldHalfSize;
+    G4double world_size_z = kWorldHalfSize;
 
     // Solid World
     auto solidWorld = new G4Box(
@@ -119,7 +119,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     fScoringVolume = fScintillatorLogical;
 
     // Ideal photon collection surfaces
-    const G4double collectorHalfThickness = 0.5 * um;
+    const G4double collectorHalfThickness = kCollectorHalfThickness;
 
     // Same x/z size as scintillator end face
     auto* collectorSolid = new G4Box(

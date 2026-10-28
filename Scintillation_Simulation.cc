@@ -8,6 +8,7 @@
 #include "G4SystemOfUnits.hh"
 #include "G4UIExecutive.hh"
 #include "G4UImanager.hh"
+#include "G4UnitsTable.hh"
 #include "G4VisExecutive.hh"
 
 #include "ActionInitialization.hh"
@@ -16,10 +17,11 @@
 
 
 // Parses "[100mm,7cm,70mm]"; brackets and a unit (um, mm, cm) per entry are required.
-// The world has a half-size of 100 mm; the end-face collectors must fit inside.
+// The end-face collectors must fit inside the world (DetectorConstruction::kMaxScintLengthY).
 static bool ParseLengths(
     const std::string& text,
-    std::vector<G4double>& lengths)
+    std::vector<G4double>& lengths,
+    std::vector<std::string>& units)
 {
     std::string cleaned;
 
@@ -70,13 +72,16 @@ static bool ParseLengths(
 
         const G4double length = value * unitFactor;
 
-        if (length <= 0.0 || length >= 198.0 * mm)
+        if (length <= 0.0 || length >= DetectorConstruction::kMaxScintLengthY)
         {
-            G4cerr << "Scintillator length must be > 0 and < 198 mm: " << token << G4endl;
+            G4cerr << "Scintillator length must be > 0 and < "
+                   << DetectorConstruction::kMaxScintLengthY / mm
+                   << " mm (world size): " << token << G4endl;
             return false;
         }
 
         lengths.push_back(length);
+        units.push_back(unit);
     }
 
     if (lengths.empty())
@@ -108,6 +113,7 @@ int main(int argc, char** argv)
     // Full lengths of the scintillator along y, one run per entry
     std::string scintLengthText = "[70mm]";
     std::vector<G4double> scintLengths = {70.0 * mm};
+    std::vector<std::string> scintUnits = {"mm"};
 
     // =========================================================
     // Command line arguments (batch mode)
@@ -182,8 +188,9 @@ int main(int argc, char** argv)
         }
 
         scintLengths.clear();
+        scintUnits.clear();
 
-        if (!ParseLengths(scintLengthText, scintLengths))
+        if (!ParseLengths(scintLengthText, scintLengths, scintUnits))
         {
             return 1;
         }
@@ -200,7 +207,7 @@ int main(int argc, char** argv)
         );
 
 
-    auto detector = new DetectorConstruction(scintLengths.front());
+    auto detector = new DetectorConstruction(scintLengths.front(), scintUnits.front());
 
     runManager->SetUserInitialization(detector);
 
@@ -261,7 +268,7 @@ int main(int argc, char** argv)
             if (i > 0)
             {
                 // Geometry is rebuilt with the new length
-                detector->SetScintLengthY(scintLengths[i]);
+                detector->SetScintLengthY(scintLengths[i], scintUnits[i]);
 
                 uiManager->ApplyCommand("/run/reinitialize");
             }
@@ -276,8 +283,8 @@ int main(int argc, char** argv)
                 << " "
                 << energyUnit
                 << "\nScint length (y) : "
-                << scintLengths[i] / mm
-                << " mm"
+                << scintLengths[i] / G4UnitDefinition::GetValueOf(scintUnits[i])
+                << " " << scintUnits[i]
                 << "\n====================================\n"
                 << G4endl;
 

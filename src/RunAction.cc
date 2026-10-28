@@ -117,20 +117,35 @@ void RunAction::EndOfRunAction(const G4Run* run)
     analysisManager->Write();
     analysisManager->CloseFile();
 
-    // Geant4 appends the ntuple name to the file name
-    const std::filesystem::path generated =
-        std::filesystem::path("data") / (fBaseName + "_PhotonHits.csv");
+    // Geant4 writes "<base>_nt_<ntupleName>.csv"; rename it to "<base>.csv"
+    const std::filesystem::path dataDir("data");
+    const std::string generatedPrefix = fBaseName + "_nt_";
 
-    if (std::filesystem::exists(generated))
+    bool renamed = false;
+
+    for (const auto& entry : std::filesystem::directory_iterator(dataDir))
     {
-        std::filesystem::rename(
-            generated,
-            std::filesystem::path("data") / (fBaseName + ".csv")
-        );
+        const std::string name = entry.path().filename().string();
+
+        if (name.rfind(generatedPrefix, 0) == 0 && entry.path().extension() == ".csv")
+        {
+            std::error_code ec;
+
+            std::filesystem::rename(entry.path(), dataDir / (fBaseName + ".csv"), ec);
+
+            if (ec)
+            {
+                G4cerr << "WARNING: could not rename " << entry.path() << ": " << ec.message() << G4endl;
+            }
+
+            renamed = true;
+            break;
+        }
     }
-    else
+
+    if (!renamed)
     {
-        G4cerr << "WARNING: expected output file not found: " << generated << G4endl;
+        G4cerr << "WARNING: no output file starting with " << generatedPrefix << " found in data/" << G4endl;
     }
 
     const G4int nEvents = run->GetNumberOfEvent();
