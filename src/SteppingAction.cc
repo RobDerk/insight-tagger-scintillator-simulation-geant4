@@ -52,8 +52,8 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
         
         fScoringVolume = detConstruction->GetScoringVolume();
 
-        fTopCollectorPhysical = detConstruction->GetTopCollectorPhysical();
-        fBottomCollectorPhysical = detConstruction->GetBottomCollectorPhysical();
+        fTopCollectors = detConstruction->GetTopCollectors();
+        fBottomCollectors = detConstruction->GetBottomCollectors();
 
         auto* boxSolid = dynamic_cast<G4Box*>(fScoringVolume->GetSolid());
 
@@ -163,9 +163,17 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
         }
     }
 
-    // Count reflections at the side faces (not at the top/bottom collector faces)
-    if (postVolume != fTopCollectorPhysical
-        && postVolume != fBottomCollectorPhysical
+    // Count reflections at the side faces (not at the SiPM faces)
+    const auto isIn = [postVolume](const std::vector<G4VPhysicalVolume*>& volumes)
+    {
+        return std::find(volumes.begin(), volumes.end(), postVolume) != volumes.end();
+    };
+
+    const bool hitsTop = isIn(fTopCollectors);
+    const bool hitsBottom = isIn(fBottomCollectors);
+
+    if (!hitsTop
+        && !hitsBottom
         && (boundaryStatus == FresnelReflection
             || boundaryStatus == TotalInternalReflection
             || boundaryStatus == LambertianReflection
@@ -219,12 +227,12 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
 
     G4String hitType;
 
-    if (postVolume == fTopCollectorPhysical)
+    if (hitsTop)
     {
         hitType = "top";
     }
 
-    else if (postVolume == fBottomCollectorPhysical)
+    else if (hitsBottom)
     {
         hitType = "bottom";
     }

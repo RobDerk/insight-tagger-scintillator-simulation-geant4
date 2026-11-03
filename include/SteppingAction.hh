@@ -5,6 +5,8 @@
 
 #include "globals.hh"
 
+#include <vector>
+
 class G4LogicalVolume;
 class G4VPhysicalVolume;
 class G4Step;
@@ -25,8 +27,8 @@ class SteppingAction : public G4UserSteppingAction
     G4LogicalVolume* fScoringVolume = nullptr;
     G4int fCachedRunID = -1;
 
-    G4VPhysicalVolume* fTopCollectorPhysical = nullptr;
-    G4VPhysicalVolume* fBottomCollectorPhysical = nullptr;
+    std::vector<G4VPhysicalVolume*> fTopCollectors;
+    std::vector<G4VPhysicalVolume*> fBottomCollectors;
 
     G4double fScintHalfX = 0.0;
     G4double fScintHalfY = 0.0;

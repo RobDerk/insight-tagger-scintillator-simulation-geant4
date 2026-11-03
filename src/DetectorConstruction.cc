@@ -121,74 +121,77 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // Ideal photon collection surfaces
     const G4double collectorHalfThickness = kCollectorHalfThickness;
 
-    // Same x/z size as scintillator end face
-    auto* collectorSolid = new G4Box(
-        "PhotonCollectorSolid",
-        scint_size_x,
-        collectorHalfThickness,
-        scint_size_z
-    );
+    // Active area of one SiPM
+    const G4double activeArea_size_x = 3.72 * mm;
+    const G4double activeArea_size_z = 3.62 * mm;
+
+    // Three SiPMs per end face, evenly spread over the full end-face width
+    const G4int sipmsPerFace = 3;
+    const G4double sipmPitch = 2 * scint_size_x / sipmsPerFace;
 
     // Material is basically irrelevant because the ideal optical surface
     // absorbs/detects the photon before it propagates inside the collector
+    auto* collectorSolid = new G4Box(
+        "PhotonCollectorSolid",
+        0.5 * activeArea_size_x,
+        collectorHalfThickness,
+        0.5 * activeArea_size_z
+    );
+
     auto* collectorLogical = new G4LogicalVolume(
         collectorSolid,
         world_material,
         "PhotonCollectorLogical"
     );
 
-    // Top collector
-    fTopCollectorPhysical = new G4PVPlacement(
-        nullptr,
-        G4ThreeVector(
-            scint_place_x0,
-            scint_place_y0 + scint_size_y + collectorHalfThickness,
-            scint_place_z0
-        ),
-        collectorLogical,
-        "TopPhotonCollector",
-        logicWorld,
-        false,
-        0,
-        checkOverlaps
-    );
-
-    // Bottom collector
-    fBottomCollectorPhysical = new G4PVPlacement(
-        nullptr,
-        G4ThreeVector(
-            scint_place_x0,
-            scint_place_y0 - scint_size_y - collectorHalfThickness,
-            scint_place_z0
-        ),
-        collectorLogical,
-        "BottomPhotonCollector",
-        logicWorld,
-        false,
-        1,
-        checkOverlaps
-    );
-
-    // Create ideal photon detector surface using PDE data for the AFBR-S4N44P014M NUV-MT Silicon Photomultiplier
+    // PDE data for the AFBR-S4N44P014M NUV-MT Silicon Photomultiplier
     auto* idealDetectorSurface =
         OpticalMaterials::CreateIdealPhotonDetectorSurface(
             G4String(PDE_DATA_DIR) + "/PDE_afbr-s4n44p01M_extracted.txt"
         );
 
-    // Attach the ideal photon detector surface to the scintillator-collector interfaces
-    new G4LogicalBorderSurface(
-        "ScintillatorToTopCollectorSurface",
-        scintillatorPhysical,
-        fTopCollectorPhysical,
-        idealDetectorSurface
-    );
+    fTopCollectors.clear();
+    fBottomCollectors.clear();
 
-    new G4LogicalBorderSurface(
-        "ScintillatorToBottomCollectorSurface",
-        scintillatorPhysical,
-        fBottomCollectorPhysical,
-        idealDetectorSurface
-    );
+    // side = +1: top end face, side = -1: bottom end face
+    for (const G4int side : {1, -1})
+    {
+        const G4String sideName = (side > 0) ? "Top" : "Bottom";
+        auto& collectors = (side > 0) ? fTopCollectors : fBottomCollectors;
+
+        for (G4int i = 0; i < sipmsPerFace; ++i)
+        {
+            const G4double sipm_place_x0 = scint_place_x0 + (i - 0.5 * (sipmsPerFace - 1)) * sipmPitch;
+            const G4double sipm_place_y0 = scint_place_y0 + side * (scint_size_y + collectorHalfThickness);
+            const G4double sipm_place_z0 = scint_place_z0;
+
+            const G4String sipmName = sideName + "SiPM" + std::to_string(i);
+
+            auto* sipmPhysical = new G4PVPlacement(
+                nullptr,
+                G4ThreeVector(
+                    sipm_place_x0,
+                    sipm_place_y0,
+                    sipm_place_z0
+                ),
+                collectorLogical,
+                sipmName,
+                logicWorld,
+                false,
+                i,
+                checkOverlaps
+            );
+
+            new G4LogicalBorderSurface(
+                "ScintillatorTo" + sipmName + "Surface",
+                scintillatorPhysical,
+                sipmPhysical,
+                idealDetectorSurface
+            );
+
+            collectors.push_back(sipmPhysical);
+        }
+    }
 
     return physWorld;
 }

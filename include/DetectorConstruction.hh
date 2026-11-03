@@ -7,6 +7,8 @@
 
 #include "globals.hh"
 
+#include <vector>
+
 class G4VPhysicalVolume;
 class G4LogicalVolume;
 class G4Material;
@@ -54,14 +56,15 @@ class DetectorConstruction final : public G4VUserDetectorConstruction
             return fScintLengthUnit;
         }
 
-        G4VPhysicalVolume* GetTopCollectorPhysical() const
+        // SiPM active areas on the top (+y) and bottom (-y) end face
+        const std::vector<G4VPhysicalVolume*>& GetTopCollectors() const
         {
-            return fTopCollectorPhysical;
+            return fTopCollectors;
         }
 
-        G4VPhysicalVolume* GetBottomCollectorPhysical() const
+        const std::vector<G4VPhysicalVolume*>& GetBottomCollectors() const
         {
-            return fBottomCollectorPhysical;
+            return fBottomCollectors;
         }
 
     private:
@@ -71,8 +74,8 @@ class DetectorConstruction final : public G4VUserDetectorConstruction
 
         G4LogicalVolume* fScintillatorLogical = nullptr;
 
-        G4VPhysicalVolume* fTopCollectorPhysical = nullptr;
-        G4VPhysicalVolume* fBottomCollectorPhysical = nullptr;
+        std::vector<G4VPhysicalVolume*> fTopCollectors;
+        std::vector<G4VPhysicalVolume*> fBottomCollectors;
 
     protected:
         G4LogicalVolume* fScoringVolume = nullptr;
