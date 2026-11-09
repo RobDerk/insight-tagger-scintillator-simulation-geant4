@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -13,6 +14,7 @@
 
 #include "ActionInitialization.hh"
 #include "DetectorConstruction.hh"
+#include "OpticalMaterials.hh"
 #include "PhysicsList.hh"
 
 
@@ -93,8 +95,9 @@ static bool ParseLengths(
     return true;
 }
 
-// Usage (batch): ./Scintillation_Simulation <macro> [events] [energy] [energyUnit] [lengths]
+// Usage (batch): ./Scintillation_Simulation <macro> [events] [energy] [energyUnit] [lengths] [material]
 // lengths: "[70mm,100mm,...]" (quoted, unit required per entry); one run per length.
+// material: EJ232 (default), EJ232Q05 or EJ230.
 // No arguments: interactive UI mode with vis.mac.
 int main(int argc, char** argv)
 {
@@ -114,6 +117,7 @@ int main(int argc, char** argv)
     std::string scintLengthText = "[70mm]";
     std::vector<G4double> scintLengths = {70.0 * mm};
     std::vector<std::string> scintUnits = {"mm"};
+    G4String scintMaterial = "EJ232";
 
     // =========================================================
     // Command line arguments (batch mode)
@@ -194,6 +198,28 @@ int main(int argc, char** argv)
         {
             return 1;
         }
+
+        if (argc >= 7)
+        {
+            scintMaterial = argv[6];
+        }
+
+        if (std::find(
+                OpticalMaterials::kScintillatorNames.begin(),
+                OpticalMaterials::kScintillatorNames.end(),
+                scintMaterial) == OpticalMaterials::kScintillatorNames.end())
+        {
+            G4cerr << "Invalid material: " << scintMaterial << " (use";
+
+            for (const auto& name : OpticalMaterials::kScintillatorNames)
+            {
+                G4cerr << " " << name;
+            }
+
+            G4cerr << ")" << G4endl;
+
+            return 1;
+        }
     }
 
 
@@ -207,7 +233,7 @@ int main(int argc, char** argv)
         );
 
 
-    auto detector = new DetectorConstruction(scintLengths.front(), scintUnits.front());
+    auto detector = new DetectorConstruction(scintLengths.front(), scintUnits.front(), scintMaterial);
 
     runManager->SetUserInitialization(detector);
 
@@ -285,6 +311,7 @@ int main(int argc, char** argv)
                 << "\nScint length (y) : "
                 << scintLengths[i] / G4UnitDefinition::GetValueOf(scintUnits[i])
                 << " " << scintUnits[i]
+                << "\nScint material : " << scintMaterial
                 << "\n====================================\n"
                 << G4endl;
 

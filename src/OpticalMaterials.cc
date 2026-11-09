@@ -49,6 +49,18 @@ namespace
 
         return !energy.empty();
     }
+
+    // Polyvinyltoluene base (C9H10, 1.023 g/cm3) shared by the EJ scintillators
+    G4Material* CreatePVTBase(const G4String& name)
+    {
+        auto* nist = G4NistManager::Instance();
+
+        auto* material = new G4Material(name, 1.023 * g / cm3, 2);
+        material->AddElement(nist->FindOrBuildElement("C"), 9);
+        material->AddElement(nist->FindOrBuildElement("H"), 10);
+
+        return material;
+    }
 }
 
 namespace OpticalMaterials
@@ -58,46 +70,7 @@ namespace OpticalMaterials
         auto* nist = G4NistManager::Instance();
         auto* air = nist->FindOrBuildMaterial("G4_AIR");
 
-        const std::vector<G4double> photonEnergy =
-        {
-            1.7712 * eV,
-            1.8368 * eV,
-            1.9074 * eV,
-            1.9837 * eV,
-            2.0664 * eV,
-            2.1562 * eV,
-            2.2543 * eV,
-            2.3616 * eV,
-            2.4797 * eV,
-            2.6102 * eV,
-            2.6953 * eV,
-            2.7552 * eV,
-            2.8178 * eV,
-            2.8834 * eV,
-            2.9520 * eV,
-            3.0240 * eV,
-            3.0996 * eV,
-            3.1388 * eV,
-            3.1791 * eV,
-            3.2204 * eV,
-            3.2627 * eV,
-            3.3062 * eV,
-            3.3509 * eV,
-            3.3968 * eV,
-            3.4440 * eV,
-            3.4925 * eV,
-            3.5424 * eV,
-            3.5937 * eV,
-            3.6466 * eV,
-            3.7010 * eV,
-            3.7571 * eV,
-            3.8149 * eV,
-            3.8745 * eV,
-            3.9360 * eV,
-            3.9995 * eV,
-            4.0651 * eV,
-            4.1328 * eV
-        };
+        const auto& photonEnergy = kScintillatorPhotonEnergy;
 
         const std::vector<G4double> airRIndex(photonEnergy.size(), 1.0003);
 
@@ -117,59 +90,9 @@ namespace OpticalMaterials
             return existing;
         }
 
-        auto* nist = G4NistManager::Instance();
-        auto* hydrogen = nist->FindOrBuildElement("H");
-        auto* carbon = nist->FindOrBuildElement("C");
+        auto* ej232 = CreatePVTBase("EJ232");
 
-        auto* ej232 = new G4Material(
-            "EJ232",
-            1.023 * g / cm3, 
-            2
-        );
-
-        ej232->AddElement(carbon, 9);
-        ej232->AddElement(hydrogen, 10);
-
-        const std::vector<G4double> photonEnergy =
-        {
-            1.7712 * eV,
-            1.8368 * eV,
-            1.9074 * eV,
-            1.9837 * eV,
-            2.0664 * eV,
-            2.1562 * eV,
-            2.2543 * eV,
-            2.3616 * eV,
-            2.4797 * eV,
-            2.6102 * eV,
-            2.6953 * eV,
-            2.7552 * eV,
-            2.8178 * eV,
-            2.8834 * eV,
-            2.9520 * eV,
-            3.0240 * eV,
-            3.0996 * eV,
-            3.1388 * eV,
-            3.1791 * eV,
-            3.2204 * eV,
-            3.2627 * eV,
-            3.3062 * eV,
-            3.3509 * eV,
-            3.3968 * eV,
-            3.4440 * eV,
-            3.4925 * eV,
-            3.5424 * eV,
-            3.5937 * eV,
-            3.6466 * eV,
-            3.7010 * eV,
-            3.7571 * eV,
-            3.8149 * eV,
-            3.8745 * eV,
-            3.9360 * eV,
-            3.9995 * eV,
-            4.0651 * eV,
-            4.1328 * eV
-        };
+        const auto& photonEnergy = kScintillatorPhotonEnergy;
 
         // Values outside 340-460 nm are extrapolated, not manufacturer data.
         const std::vector<G4double> scintSpectrum =
@@ -302,6 +225,299 @@ namespace OpticalMaterials
         return ej232;
     }
 
+    G4Material* CreateEJ232Q05()
+    {
+        if (auto* existing = G4Material::GetMaterial("EJ232Q05", false))
+        {
+            return existing;
+        }
+
+        auto* ej232Q05 = CreatePVTBase("EJ232Q05");
+
+        const auto& photonEnergy = kScintillatorPhotonEnergy;
+
+        // Values outside 340-460 nm are extrapolated, not manufacturer data.
+        const std::vector<G4double> scintSpectrum =
+        {
+            0.00002,
+            0.00003,
+            0.0001,
+            0.0002,
+            0.0004,
+            0.001,
+            0.002,
+            0.005,
+            0.01,
+            0.02,
+            0.03,
+            0.06,
+            0.10,
+            0.18,
+            0.30,
+            0.39,
+            0.52,
+            0.60,
+            0.75,
+            0.84,
+            0.82,
+            0.87,
+            1.00,
+            0.90,
+            0.68,
+            0.50,
+            0.52,
+            0.35,
+            0.12,
+            0.08,
+            0.05,
+            0.03,
+            0.018,
+            0.010,
+            0.006,
+            0.003,
+            0.0015
+        };
+
+        const std::vector<G4double> rIndex(photonEnergy.size(), 1.58);
+
+        // UV absorption values below 340 nm are extrapolated estimates.
+        const std::vector<G4double> absLength =
+        {
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            10.0 * cm,
+            5.0 * cm,
+            2.0 * cm,
+            0.5 * cm,
+            0.1 * cm,
+            0.02 * cm,
+            0.005 * cm,
+            0.001 * cm,
+            0.0005 * cm
+        };
+
+        auto* scintillatorMPT = new G4MaterialPropertiesTable();
+
+        scintillatorMPT->AddProperty(
+            "RINDEX",
+            photonEnergy,
+            rIndex
+        );
+
+        scintillatorMPT->AddProperty(
+            "ABSLENGTH",
+            photonEnergy,
+            absLength
+        );
+
+        scintillatorMPT->AddProperty(
+            "SCINTILLATIONCOMPONENT1",
+            photonEnergy,
+            scintSpectrum
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "SCINTILLATIONYIELD",
+            2900. / MeV
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "SCINTILLATIONRISETIME1",
+            110. * ps
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "SCINTILLATIONTIMECONSTANT1",
+            700. * ps
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "RESOLUTIONSCALE",
+            1.0
+        );
+
+        ej232Q05->SetMaterialPropertiesTable(scintillatorMPT);
+
+        return ej232Q05;
+    }
+
+    G4Material* CreateEJ230()
+    {
+        if (auto* existing = G4Material::GetMaterial("EJ230", false))
+        {
+            return existing;
+        }
+
+        auto* ej230 = CreatePVTBase("EJ230");
+
+        const auto& photonEnergy = kScintillatorPhotonEnergy;
+
+        // Read off the Eljen EJ-228/EJ-230 emission plot (peak 391 nm), not tabulated data.
+        const std::vector<G4double> scintSpectrum =
+        {
+            0.0,    // 700 nm
+            0.0,    // 675 nm
+            0.0,    // 650 nm
+            0.0,    // 625 nm
+            0.0,    // 600 nm
+            0.0,    // 575 nm
+            0.0,    // 550 nm
+            0.0,    // 525 nm
+            0.005,  // 500 nm
+            0.04,   // 475 nm
+            0.07,   // 460 nm
+            0.12,   // 450 nm
+            0.22,   // 440 nm
+            0.31,   // 430 nm
+            0.45,   // 420 nm
+            0.64,   // 410 nm
+            0.88,   // 400 nm
+            0.96,   // 395 nm
+            1.00,   // 390 nm
+            0.95,   // 385 nm
+            0.84,   // 380 nm
+            0.55,   // 375 nm
+            0.22,   // 370 nm
+            0.10,   // 365 nm
+            0.05,   // 360 nm
+            0.02,   // 355 nm
+            0.0,    // 350 nm
+            0.0,    // 345 nm
+            0.0,    // 340 nm
+            0.0,    // 335 nm
+            0.0,    // 330 nm
+            0.0,    // 325 nm
+            0.0,    // 320 nm
+            0.0,    // 315 nm
+            0.0,    // 310 nm
+            0.0,    // 305 nm
+            0.0     // 300 nm
+        };
+
+        const std::vector<G4double> rIndex(photonEnergy.size(), 1.58);
+
+        // 120 cm is the datasheet value; the UV edge below 380 nm is an estimate.
+        const std::vector<G4double> absLength =
+        {
+            120.0 * cm,   // 700 nm
+            120.0 * cm,   // 675 nm
+            120.0 * cm,   // 650 nm
+            120.0 * cm,   // 625 nm
+            120.0 * cm,   // 600 nm
+            120.0 * cm,   // 575 nm
+            120.0 * cm,   // 550 nm
+            120.0 * cm,   // 525 nm
+            120.0 * cm,   // 500 nm
+            120.0 * cm,   // 475 nm
+            120.0 * cm,   // 460 nm
+            120.0 * cm,   // 450 nm
+            120.0 * cm,   // 440 nm
+            120.0 * cm,   // 430 nm
+            120.0 * cm,   // 420 nm
+            120.0 * cm,   // 410 nm
+            120.0 * cm,   // 400 nm
+            120.0 * cm,   // 395 nm
+            120.0 * cm,   // 390 nm
+            120.0 * cm,   // 385 nm
+            120.0 * cm,   // 380 nm
+            60.0 * cm,    // 375 nm
+            20.0 * cm,    // 370 nm
+            5.0 * cm,     // 365 nm
+            1.0 * cm,     // 360 nm
+            0.2 * cm,     // 355 nm
+            0.05 * cm,    // 350 nm
+            0.01 * cm,    // 345 nm
+            0.005 * cm,   // 340 nm
+            0.002 * cm,   // 335 nm
+            0.001 * cm,   // 330 nm
+            0.0005 * cm,  // 325 nm
+            0.0005 * cm,  // 320 nm
+            0.0005 * cm,  // 315 nm
+            0.0005 * cm,  // 310 nm
+            0.0005 * cm,  // 305 nm
+            0.0005 * cm   // 300 nm
+        };
+
+        auto* scintillatorMPT = new G4MaterialPropertiesTable();
+
+        scintillatorMPT->AddProperty(
+            "RINDEX",
+            photonEnergy,
+            rIndex
+        );
+
+        scintillatorMPT->AddProperty(
+            "ABSLENGTH",
+            photonEnergy,
+            absLength
+        );
+
+        scintillatorMPT->AddProperty(
+            "SCINTILLATIONCOMPONENT1",
+            photonEnergy,
+            scintSpectrum
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "SCINTILLATIONYIELD",
+            9700. / MeV
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "SCINTILLATIONRISETIME1",
+            500. * ps
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "SCINTILLATIONTIMECONSTANT1",
+            1500. * ps
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "RESOLUTIONSCALE",
+            1.0
+        );
+
+        ej230->SetMaterialPropertiesTable(scintillatorMPT);
+
+        return ej230;
+    }
+
+    G4Material* CreateScintillator(const G4String& name)
+    {
+        if (name == "EJ232") return CreateEJ232();
+        if (name == "EJ232Q05") return CreateEJ232Q05();
+        if (name == "EJ230") return CreateEJ230();
+
+        return nullptr;
+    }
+
     G4OpticalSurface* CreateIdealPhotonDetectorSurface(const G4String& pdeFile)
     {
         auto* detectorSurface = new G4OpticalSurface("IdealPhotonCollectionSurface");
@@ -354,66 +570,7 @@ namespace OpticalMaterials
         saphirGlass->AddElement(silicon, 1);
         saphirGlass->AddElement(oxygen, 2);
 
-        // Range extended down to 200 nm; sapphire remains transparent well into the UV.
-        std::vector<G4double> photonEnergy = {
-            1.7712 * eV,
-            1.8368 * eV,
-            1.9074 * eV,
-            1.9837 * eV,
-            2.0664 * eV,
-            2.1562 * eV,
-            2.2543 * eV,
-            2.3616 * eV,
-            2.4797 * eV,
-            2.6102 * eV,
-            2.6953 * eV,
-            2.7552 * eV,
-            2.8178 * eV,
-            2.8834 * eV,
-            2.9520 * eV,
-            3.0240 * eV,
-            3.0996 * eV,
-            3.1388 * eV,
-            3.1791 * eV,
-            3.2204 * eV,
-            3.2627 * eV,
-            3.3062 * eV,
-            3.3509 * eV,
-            3.3968 * eV,
-            3.4440 * eV,
-            3.4925 * eV,
-            3.5424 * eV,
-            3.5937 * eV,
-            3.6466 * eV,
-            3.7010 * eV,
-            3.7571 * eV,
-            3.8149 * eV,
-            3.8745 * eV,
-            3.9360 * eV,
-            3.9995 * eV,
-            4.0651 * eV,
-            4.1328 * eV,
-            4.2028 * eV,
-            4.2753 * eV,
-            4.3503 * eV,
-            4.4280 * eV,
-            4.5085 * eV,
-            4.5920 * eV,
-            4.6786 * eV,
-            4.7686 * eV,
-            4.8621 * eV,
-            4.9594 * eV,
-            5.0606 * eV,
-            5.1660 * eV,
-            5.2759 * eV,
-            5.3906 * eV,
-            5.5104 * eV,
-            5.6356 * eV,
-            5.7667 * eV,
-            5.9040 * eV,
-            6.0480 * eV,
-            6.1992 * eV
-        };
+        const auto& photonEnergy = kSapphirePhotonEnergy;
 
         const std::vector<G4double> refractiveIndex(photonEnergy.size(), 1.77);
 

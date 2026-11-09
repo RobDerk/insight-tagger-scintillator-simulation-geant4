@@ -61,7 +61,7 @@ Führt `vis.mac` aus (OpenGL-Viewer, 1 Event).
 ### Batch-Modus
 
 ```bash
-./Scintillation_Simulation <macro> [events] [energie] [energieeinheit] [längen]
+./Scintillation_Simulation <macro> [events] [energie] [energieeinheit] [längen] [material]
 ```
 
 | Argument | Bedeutung | Standard |
@@ -71,6 +71,7 @@ Führt `vis.mac` aus (OpenGL-Viewer, 1 Event).
 | `energie` | Energie des Primärteilchens | `1` |
 | `energieeinheit` | Geant4-Energieeinheit (`eV`, `keV`, `MeV`, `GeV`, ...) | `GeV` |
 | `längen` | Volle Länge des Szintillators in y als Liste in Anführungszeichen, z. B. `"[70mm,100mm]"`; Einheit (`um`, `mm`, `cm`) pro Eintrag Pflicht, pro Länge ein Run | `"[70mm]"` |
+| `material` | Szintillatormaterial: `EJ232`, `EJ232Q05` oder `EJ230` (Groß-/Kleinschreibung beachten) | `EJ232` |
 
 Jede Länge muss größer als 0 und kleiner als die World sein (Halbgröße 100 mm, maximal 199.998 mm inklusive der Collector).
 
@@ -88,6 +89,9 @@ Beispiele:
 
 # Mehrere Längen: je ein Run mit 100, 70 und 50 mm
 ./Scintillation_Simulation run.mac 1000 1 GeV "[100mm,70mm,50mm]"
+
+# Anderes Material (7. Argument)
+./Scintillation_Simulation run.mac 1000 1 GeV "[70mm]" EJ230
 ```
 
 ## Ausgabe

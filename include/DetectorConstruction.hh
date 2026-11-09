@@ -26,7 +26,8 @@ class DetectorConstruction final : public G4VUserDetectorConstruction
         // scintLengthY: full length; halved internally for G4Box
         explicit DetectorConstruction(
             G4double scintLengthY = 70 * mm,
-            const G4String& scintLengthUnit = "mm");
+            const G4String& scintLengthUnit = "mm",
+            const G4String& scintMaterial = "EJ232");
         ~DetectorConstruction() override;
 
         virtual G4VPhysicalVolume* Construct() override;
@@ -56,6 +57,11 @@ class DetectorConstruction final : public G4VUserDetectorConstruction
             return fScintLengthUnit;
         }
 
+        const G4String& GetScintMaterialName() const
+        {
+            return fScintMaterialName;
+        }
+
         // SiPM active areas on the top (+y) and bottom (-y) end face
         const std::vector<G4VPhysicalVolume*>& GetTopCollectors() const
         {
@@ -71,6 +77,7 @@ class DetectorConstruction final : public G4VUserDetectorConstruction
         // Full length of the scintillator along y (photon transport direction)
         G4double fScintLengthY = 70 * mm;
         G4String fScintLengthUnit = "mm";
+        G4String fScintMaterialName = "EJ232";
 
         G4LogicalVolume* fScintillatorLogical = nullptr;
 

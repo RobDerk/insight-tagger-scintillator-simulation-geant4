@@ -13,8 +13,13 @@
 #include "G4OpticalSurface.hh"
 #include "G4LogicalBorderSurface.hh"
 
-DetectorConstruction::DetectorConstruction(G4double scintLengthY, const G4String& scintLengthUnit)
-    : fScintLengthY(scintLengthY), fScintLengthUnit(scintLengthUnit)
+DetectorConstruction::DetectorConstruction(
+    G4double scintLengthY,
+    const G4String& scintLengthUnit,
+    const G4String& scintMaterial)
+    : fScintLengthY(scintLengthY),
+      fScintLengthUnit(scintLengthUnit),
+      fScintMaterialName(scintMaterial)
 {
 
 }
@@ -71,7 +76,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // Detector: Scintillator
     //
 
-    auto* scintillator_material = OpticalMaterials::CreateEJ232();
+    auto* scintillator_material = OpticalMaterials::CreateScintillator(fScintMaterialName);
     // auto* scintillator_material = OpticalMaterials::Saphir_Glass();
 
     // Scintillator size
