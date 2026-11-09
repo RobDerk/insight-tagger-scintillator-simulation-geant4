@@ -97,7 +97,7 @@ Beispiele:
 ## Ausgabe
 
 - Konsole: pro Event Primärteilchen, Energiedeposition, Zeit des Elektroneneintritts, Photonenzahlen oben/unten/gesamt, Asymmetrie und Rechenzeit. Am Ende jedes Runs Gesamt- und Zeit pro Event.
-- Dateien: CSV-Dateien im Ordner `data/` (`<länge>mm.csv`, z. B. `70mm.csv`; gleiche Länge überschreibt die Datei) mit je einem Eintrag pro Photon-Treffer:
+- Dateien: CSV-Dateien nach Material und Energie sortiert: `data/<material>/<energie>/<länge>mm.csv`, z. B. `data/EJ230/1GeV/70mm.csv`. Gleiche Kombination aus Material, Energie und Länge überschreibt die Datei. Je ein Eintrag pro Photon-Treffer:
 
 | Spalte | Inhalt |
 |---|---|
@@ -111,6 +111,10 @@ Beispiele:
 | `photonCreationTime` | Erzeugungszeit des Photons |
 | `creatorProcess` | Erzeugungsprozess (z. B. Scintillation, Cerenkov) |
 | `nSideReflections` | Anzahl Reflexionen an den Seitenflächen |
+| `scintLength` | Volle Länge des Szintillators in mm |
+| `emissionAngle` | Winkel zwischen Photonenerzeugung und Strahlrichtung in Grad |
+| `material` | Name des Szintillatormaterials, z. B. `EJ230` |
+| `electronEnergy` | Energie des Primärelektrons in MeV |
 
 ## Anderes Szintillatormaterial verwenden
 

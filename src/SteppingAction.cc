@@ -12,6 +12,7 @@
 #include "G4Track.hh"
 #include "G4OpticalPhoton.hh"
 #include "G4LogicalVolume.hh"
+#include "G4Material.hh"
 #include "G4VPhysicalVolume.hh"
 #include "G4GeometryTolerance.hh"
 #include "G4SystemOfUnits.hh"
@@ -275,6 +276,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
 
     // Emission angle between photon creation direction and primary beam direction
     G4double emissionAngle = 0.0;
+    G4double electronEnergy = 0.0;
 
     if (const auto* vertex = event->GetPrimaryVertex(0))
     {
@@ -283,6 +285,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
             const G4double cosTheta = track->GetVertexMomentumDirection().dot(primary->GetMomentumDirection().unit());
 
             emissionAngle = std::acos(std::max(-1.0, std::min(1.0, cosTheta)));
+            electronEnergy = primary->GetKineticEnergy();
         }
     }
 
@@ -309,6 +312,8 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     analysisManager->FillNtupleIColumn(11, fEventAction->GetSideReflections(trackID));
     analysisManager->FillNtupleDColumn(12, 2. * fScintHalfY / mm);
     analysisManager->FillNtupleDColumn(13, emissionAngle / deg);
+    analysisManager->FillNtupleSColumn(14, fScoringVolume->GetMaterial()->GetName());
+    analysisManager->FillNtupleDColumn(15, electronEnergy / MeV);
 
     analysisManager->AddNtupleRow();
 

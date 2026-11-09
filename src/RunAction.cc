@@ -19,6 +19,21 @@
 #include <iomanip>
 #include <sstream>
 
+namespace
+{
+    // "1GeV", "500MeV", "1.5GeV"
+    std::string EnergyLabel(G4double energy)
+    {
+        std::ostringstream label;
+
+        if (energy >= GeV) label << energy / GeV << "GeV";
+        else if (energy >= MeV) label << energy / MeV << "MeV";
+        else label << energy / keV << "keV";
+
+        return label.str();
+    }
+}
+
 RunAction::RunAction()
 {
     // Register accumulable to the accumulable manager
@@ -51,6 +66,8 @@ RunAction::RunAction()
     analysisManager->CreateNtupleIColumn("nSideReflections");
     analysisManager->CreateNtupleDColumn("scintLength");
     analysisManager->CreateNtupleDColumn("emissionAngle");
+    analysisManager->CreateNtupleSColumn("material");
+    analysisManager->CreateNtupleDColumn("electronEnergy"); // MeV
 
     analysisManager->FinishNtuple();
 }
@@ -79,6 +96,14 @@ void RunAction::BeginOfRunAction(const G4Run* run)
     nameStream << detector->GetScintLengthY() / mm << "mm";
 
     fBaseName = nameStream.str();
+
+    const auto* generator = static_cast<const PrimaryGeneratorAction*>(
+        G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
+
+    fOutputSubDir =
+        detector->GetScintMaterialName()
+        + "/"
+        + EnergyLabel(generator->GetParticleGun()->GetParticleEnergy());
 
     const G4String fileName = fBaseName + ".csv";
 
@@ -117,8 +142,9 @@ void RunAction::EndOfRunAction(const G4Run* run)
     analysisManager->Write();
     analysisManager->CloseFile();
 
-    // Geant4 writes "<base>_nt_<ntupleName>.csv"; rename it to "<base>.csv"
+    // Geant4 writes "<base>_nt_<ntupleName>.csv" into data/; move it to data/<material>/<energy>/<base>.csv
     const std::filesystem::path dataDir("data");
+    const std::filesystem::path targetDir = dataDir / fOutputSubDir;
     const std::string generatedPrefix = fBaseName + "_nt_";
 
     bool renamed = false;
@@ -131,11 +157,16 @@ void RunAction::EndOfRunAction(const G4Run* run)
         {
             std::error_code ec;
 
-            std::filesystem::rename(entry.path(), dataDir / (fBaseName + ".csv"), ec);
+            std::filesystem::create_directories(targetDir, ec);
+
+            if (!ec)
+            {
+                std::filesystem::rename(entry.path(), targetDir / (fBaseName + ".csv"), ec);
+            }
 
             if (ec)
             {
-                G4cerr << "WARNING: could not rename " << entry.path() << ": " << ec.message() << G4endl;
+                G4cerr << "WARNING: could not move " << entry.path() << ": " << ec.message() << G4endl;
             }
 
             renamed = true;

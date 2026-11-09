@@ -34,6 +34,9 @@ class RunAction : public G4UserRunAction
 
     // Base name of the current run's CSV, e.g. "70mm"
     G4String fBaseName;
+
+    // Subfolder of data/ for the current run, e.g. "EJ230/1GeV"
+    std::string fOutputSubDir;
 };
 
 #endif
