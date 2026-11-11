@@ -242,7 +242,7 @@ int main(int argc, char** argv)
     );
 
     runManager->SetUserInitialization(
-        new ActionInitialization()
+        new ActionInitialization(ui == nullptr)
     );
 
 

@@ -34,13 +34,18 @@ namespace
     }
 }
 
-RunAction::RunAction()
+RunAction::RunAction(G4bool writeOutput) : fWriteOutput(writeOutput)
 {
     // Register accumulable to the accumulable manager
     G4AccumulableManager* accumulableManager = G4AccumulableManager::Instance();
 
     accumulableManager->Register(fEdep);
     accumulableManager->Register(fEdep2);
+
+    if (!fWriteOutput)
+    {
+        return;
+    }
 
     // data to csv for Analysis
     std::filesystem::create_directories("data");
@@ -84,43 +89,51 @@ void RunAction::BeginOfRunAction(const G4Run* run)
 
     G4RunManager::GetRunManager()->SetRandomNumberStore(false);
 
-    // intialize the analysis manager to store data for photon hit top or bottom
-    auto analysisManager = G4AnalysisManager::Instance();
-
     const G4int runID = run->GetRunID();
-
-    const auto* detector = static_cast<const DetectorConstruction*>(
-        G4RunManager::GetRunManager()->GetUserDetectorConstruction());
-
-    std::ostringstream nameStream;
-    nameStream << detector->GetScintLengthY() / mm << "mm";
-
-    fBaseName = nameStream.str();
-
-    const auto* generator = static_cast<const PrimaryGeneratorAction*>(
-        G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
-
-    fOutputSubDir =
-        detector->GetScintMaterialName()
-        + "/"
-        + EnergyLabel(generator->GetParticleGun()->GetParticleEnergy());
-
-    const G4String fileName = fBaseName + ".csv";
 
     G4cout
     << "\n====================================\n"
-    << "Starting Run " << runID << "\n"
-    << "Output base name: " << fileName << "\n"
-    << "====================================\n"
-    << G4endl;
+    << "Starting Run " << runID << "\n";
 
-    if (!analysisManager->OpenFile(fileName))
+    if (fWriteOutput)
     {
-        G4cerr
-            << "ERROR: Could not open analysis file "
-            << fileName
-            << G4endl;
+        // intialize the analysis manager to store data for photon hit top or bottom
+        auto analysisManager = G4AnalysisManager::Instance();
+
+        const auto* detector = static_cast<const DetectorConstruction*>(
+            G4RunManager::GetRunManager()->GetUserDetectorConstruction());
+
+        std::ostringstream nameStream;
+        nameStream << detector->GetScintLengthY() / mm << "mm";
+
+        fBaseName = nameStream.str();
+
+        const auto* generator = static_cast<const PrimaryGeneratorAction*>(
+            G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
+
+        fOutputSubDir =
+            detector->GetScintMaterialName()
+            + "/"
+            + EnergyLabel(generator->GetParticleGun()->GetParticleEnergy());
+
+        const G4String fileName = fBaseName + ".csv";
+
+        G4cout << "Output base name: " << fileName << "\n";
+
+        if (!analysisManager->OpenFile(fileName))
+        {
+            G4cerr
+                << "ERROR: Could not open analysis file "
+                << fileName
+                << G4endl;
+        }
     }
+    else
+    {
+        G4cout << "CSV output disabled\n";
+    }
+
+    G4cout << "====================================\n" << G4endl;
 
     // reset accumulables to their initial values
     G4AccumulableManager* accumulableManager = G4AccumulableManager::Instance();
@@ -138,45 +151,48 @@ void RunAction::EndOfRunAction(const G4Run* run)
     G4double edep2 = fEdep2.GetValue();
 
     // stroing data in csv
-    auto analysisManager = G4AnalysisManager::Instance();
-    analysisManager->Write();
-    analysisManager->CloseFile();
-
-    // Geant4 writes "<base>_nt_<ntupleName>.csv" into data/; move it to data/<material>/<energy>/<base>.csv
-    const std::filesystem::path dataDir("data");
-    const std::filesystem::path targetDir = dataDir / fOutputSubDir;
-    const std::string generatedPrefix = fBaseName + "_nt_";
-
-    bool renamed = false;
-
-    for (const auto& entry : std::filesystem::directory_iterator(dataDir))
+    if (fWriteOutput)
     {
-        const std::string name = entry.path().filename().string();
+        auto analysisManager = G4AnalysisManager::Instance();
+        analysisManager->Write();
+        analysisManager->CloseFile();
 
-        if (name.rfind(generatedPrefix, 0) == 0 && entry.path().extension() == ".csv")
+        // Geant4 writes "<base>_nt_<ntupleName>.csv" into data/; move it to data/<material>/<energy>/<base>.csv
+        const std::filesystem::path dataDir("data");
+        const std::filesystem::path targetDir = dataDir / fOutputSubDir;
+        const std::string generatedPrefix = fBaseName + "_nt_";
+
+        bool renamed = false;
+
+        for (const auto& entry : std::filesystem::directory_iterator(dataDir))
         {
-            std::error_code ec;
+            const std::string name = entry.path().filename().string();
 
-            std::filesystem::create_directories(targetDir, ec);
-
-            if (!ec)
+            if (name.rfind(generatedPrefix, 0) == 0 && entry.path().extension() == ".csv")
             {
-                std::filesystem::rename(entry.path(), targetDir / (fBaseName + ".csv"), ec);
-            }
+                std::error_code ec;
 
-            if (ec)
-            {
-                G4cerr << "WARNING: could not move " << entry.path() << ": " << ec.message() << G4endl;
-            }
+                std::filesystem::create_directories(targetDir, ec);
 
-            renamed = true;
-            break;
+                if (!ec)
+                {
+                    std::filesystem::rename(entry.path(), targetDir / (fBaseName + ".csv"), ec);
+                }
+
+                if (ec)
+                {
+                    G4cerr << "WARNING: could not move " << entry.path() << ": " << ec.message() << G4endl;
+                }
+
+                renamed = true;
+                break;
+            }
         }
-    }
 
-    if (!renamed)
-    {
-        G4cerr << "WARNING: no output file starting with " << generatedPrefix << " found in data/" << G4endl;
+        if (!renamed)
+        {
+            G4cerr << "WARNING: no output file starting with " << generatedPrefix << " found in data/" << G4endl;
+        }
     }
 
     const G4int nEvents = run->GetNumberOfEvent();

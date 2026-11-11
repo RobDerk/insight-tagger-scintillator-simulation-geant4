@@ -3,6 +3,7 @@
 
 #include "globals.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4String.hh"
 
 #include <vector>
 
@@ -18,6 +19,9 @@ namespace OpticalMaterials
     G4Material* CreateEJ232();
     G4Material* CreateEJ232Q05();
     G4Material* CreateEJ230();
+
+    // Reflector surface material
+    G4OpticalSurface* CreateReflectorSurface();
 
     // Names accepted by CreateScintillator
     inline const std::vector<G4String> kScintillatorNames = {"EJ232", "EJ232Q05", "EJ230"};

@@ -29,7 +29,8 @@
 
 #include <cmath>
 
-SteppingAction::SteppingAction(EventAction* eventAction) : fEventAction(eventAction) 
+SteppingAction::SteppingAction(EventAction* eventAction, G4bool writeOutput)
+    : fEventAction(eventAction), fWriteOutput(writeOutput)
 {
 
 }
@@ -294,6 +295,12 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
 
     // Calculcate the photon creation time
     const G4double photonCreationTime = relativeTimeSinceElectronHit - photonFlightTime;
+
+    // Without output the hit is still counted above, but no row is written
+    if (!fWriteOutput)
+    {
+        return;
+    }
 
     // collect energy data for storing
     auto analysisManager = G4AnalysisManager::Instance();

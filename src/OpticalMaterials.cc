@@ -595,4 +595,40 @@ namespace OpticalMaterials
         return saphirGlass;
 
     }
+
+    G4OpticalSurface* CreateReflectorSurface()
+    {
+        auto* reflectorSurface = new G4OpticalSurface("ReflectorSurface");
+        auto* relflectorMPT = new G4MaterialPropertiesTable();
+
+        std::vector<G4double> photonEnergy = {
+            1.4 * eV,
+            4.5 * eV
+        };
+
+        std::vector<G4double> reflectivity = {
+            0.90,
+            0.90
+        };
+
+        relflectorMPT->AddProperty(
+            "REFLECTIVITY",
+            photonEnergy,
+            reflectivity
+        );
+
+        relflectorMPT->AddProperty(
+            "EFFICIENCY",
+            photonEnergy,
+            std::vector<G4double>(photonEnergy.size(), 0.0)
+        );
+
+        reflectorSurface->SetMaterialPropertiesTable(relflectorMPT);
+
+        reflectorSurface->SetType(dielectric_metal);
+        reflectorSurface->SetModel(glisur);
+        reflectorSurface->SetFinish(polished);
+
+        return reflectorSurface;
+    }
 }

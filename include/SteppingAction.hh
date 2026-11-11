@@ -16,7 +16,7 @@ class EventAction;
 class SteppingAction : public G4UserSteppingAction
 {
   public:
-    SteppingAction(EventAction* eventAction);
+    SteppingAction(EventAction* eventAction, G4bool writeOutput = true);
     ~SteppingAction() override;
 
     // method from the base class
@@ -24,6 +24,7 @@ class SteppingAction : public G4UserSteppingAction
 
   private:
     EventAction* fEventAction = nullptr;
+    G4bool fWriteOutput = true;
     G4LogicalVolume* fScoringVolume = nullptr;
     G4int fCachedRunID = -1;
 
