@@ -19,12 +19,13 @@ namespace OpticalMaterials
     G4Material* CreateEJ232();
     G4Material* CreateEJ232Q05();
     G4Material* CreateEJ230();
+    G4Material* CreateEJ228();
 
     // Reflector surface material
     G4OpticalSurface* CreateReflectorSurface();
 
     // Names accepted by CreateScintillator
-    inline const std::vector<G4String> kScintillatorNames = {"EJ232", "EJ232Q05", "EJ230"};
+    inline const std::vector<G4String> kScintillatorNames = {"EJ232", "EJ232Q05", "EJ230", "EJ228"};
 
     // Returns nullptr for a name not in kScintillatorNames
     G4Material* CreateScintillator(const G4String& name);

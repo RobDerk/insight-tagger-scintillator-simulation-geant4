@@ -509,11 +509,154 @@ namespace OpticalMaterials
         return ej230;
     }
 
+    G4Material* CreateEJ228()
+    {
+        if (auto* existing = G4Material::GetMaterial("EJ228", false))
+        {
+            return existing;
+        }
+
+        auto* ej228 = CreatePVTBase("EJ228");
+
+        const auto& photonEnergy = kScintillatorPhotonEnergy;
+
+        // Read off the Eljen EJ-228/EJ-230 emission plot (peak 391 nm), not tabulated data.
+        const std::vector<G4double> scintSpectrum =
+        {
+            0.0,    // 700 nm
+            0.0,    // 675 nm
+            0.0,    // 650 nm
+            0.0,    // 625 nm
+            0.0,    // 600 nm
+            0.0,    // 575 nm
+            0.0,    // 550 nm
+            0.0,    // 525 nm
+            0.005,  // 500 nm
+            0.04,   // 475 nm
+            0.07,   // 460 nm
+            0.12,   // 450 nm
+            0.22,   // 440 nm
+            0.31,   // 430 nm
+            0.45,   // 420 nm
+            0.64,   // 410 nm
+            0.88,   // 400 nm
+            0.96,   // 395 nm
+            1.00,   // 390 nm
+            0.95,   // 385 nm
+            0.84,   // 380 nm
+            0.55,   // 375 nm
+            0.22,   // 370 nm
+            0.10,   // 365 nm
+            0.05,   // 360 nm
+            0.02,   // 355 nm
+            0.0,    // 350 nm
+            0.0,    // 345 nm
+            0.0,    // 340 nm
+            0.0,    // 335 nm
+            0.0,    // 330 nm
+            0.0,    // 325 nm
+            0.0,    // 320 nm
+            0.0,    // 315 nm
+            0.0,    // 310 nm
+            0.0,    // 305 nm
+            0.0     // 300 nm
+        };
+
+        const std::vector<G4double> rIndex(photonEnergy.size(), 1.58);
+
+        // 120 cm is the datasheet value; the UV edge below 380 nm is an estimate.
+        const std::vector<G4double> absLength =
+        {
+            120.0 * cm,   // 700 nm
+            120.0 * cm,   // 675 nm
+            120.0 * cm,   // 650 nm
+            120.0 * cm,   // 625 nm
+            120.0 * cm,   // 600 nm
+            120.0 * cm,   // 575 nm
+            120.0 * cm,   // 550 nm
+            120.0 * cm,   // 525 nm
+            120.0 * cm,   // 500 nm
+            120.0 * cm,   // 475 nm
+            120.0 * cm,   // 460 nm
+            120.0 * cm,   // 450 nm
+            120.0 * cm,   // 440 nm
+            120.0 * cm,   // 430 nm
+            120.0 * cm,   // 420 nm
+            120.0 * cm,   // 410 nm
+            120.0 * cm,   // 400 nm
+            120.0 * cm,   // 395 nm
+            120.0 * cm,   // 390 nm
+            120.0 * cm,   // 385 nm
+            120.0 * cm,   // 380 nm
+            60.0 * cm,    // 375 nm
+            20.0 * cm,    // 370 nm
+            5.0 * cm,     // 365 nm
+            1.0 * cm,     // 360 nm
+            0.2 * cm,     // 355 nm
+            0.05 * cm,    // 350 nm
+            0.01 * cm,    // 345 nm
+            0.005 * cm,   // 340 nm
+            0.002 * cm,   // 335 nm
+            0.001 * cm,   // 330 nm
+            0.0005 * cm,  // 325 nm
+            0.0005 * cm,  // 320 nm
+            0.0005 * cm,  // 315 nm
+            0.0005 * cm,  // 310 nm
+            0.0005 * cm,  // 305 nm
+            0.0005 * cm   // 300 nm
+        };
+
+        auto* scintillatorMPT = new G4MaterialPropertiesTable();
+
+        scintillatorMPT->AddProperty(
+            "RINDEX",
+            photonEnergy,
+            rIndex
+        );
+
+        scintillatorMPT->AddProperty(
+            "ABSLENGTH",
+            photonEnergy,
+            absLength
+        );
+
+        scintillatorMPT->AddProperty(
+            "SCINTILLATIONCOMPONENT1",
+            photonEnergy,
+            scintSpectrum
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "SCINTILLATIONYIELD",
+            10200. / MeV
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "SCINTILLATIONRISETIME1",
+            500. * ps
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "SCINTILLATIONTIMECONSTANT1",
+            1400. * ps
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "RESOLUTIONSCALE",
+            1.0
+        );
+
+        ej228->SetMaterialPropertiesTable(scintillatorMPT);
+
+        return ej228;
+    }
+
     G4Material* CreateScintillator(const G4String& name)
     {
         if (name == "EJ232") return CreateEJ232();
         if (name == "EJ232Q05") return CreateEJ232Q05();
         if (name == "EJ230") return CreateEJ230();
+        if (name == "EJ228") return CreateEJ228();
 
         return nullptr;
     }
