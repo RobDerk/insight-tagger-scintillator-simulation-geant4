@@ -138,6 +138,12 @@ namespace OpticalMaterials
 
         const std::vector<G4double> rIndex(photonEnergy.size(), 1.58);
 
+        // EJ-232:
+        // Eljen specifies an optical mean free path of approximately 10 cm.
+        // No wavelength-dependent absorption-length curve is provided.
+        // Therefore 10 cm is used here as an effective baseline ABSLENGTH.
+        // The UV absorption edge below 340 nm is an extrapolated simulation assumption.
+
         // UV absorption values below 340 nm are extrapolated estimates.
         const std::vector<G4double> absLength =
         {
@@ -378,7 +384,9 @@ namespace OpticalMaterials
 
         const auto& photonEnergy = kScintillatorPhotonEnergy;
 
-        // Read off the Eljen EJ-228/EJ-230 emission plot (peak 391 nm), not tabulated data.
+        // Approximate digitization of the Eljen EJ-228/EJ-230 emission plot.
+        // Eljen specifies the emission maximum at 391 nm.
+        // These are NOT tabulated manufacturer values.
         const std::vector<G4double> scintSpectrum =
         {
             0.0,    // 700 nm
@@ -390,23 +398,23 @@ namespace OpticalMaterials
             0.0,    // 550 nm
             0.0,    // 525 nm
             0.005,  // 500 nm
-            0.04,   // 475 nm
-            0.07,   // 460 nm
-            0.12,   // 450 nm
-            0.22,   // 440 nm
-            0.31,   // 430 nm
-            0.45,   // 420 nm
-            0.64,   // 410 nm
-            0.88,   // 400 nm
+            0.03,   // 475 nm
+            0.06,   // 460 nm
+            0.10,   // 450 nm
+            0.18,   // 440 nm
+            0.28,   // 430 nm
+            0.42,   // 420 nm
+            0.60,   // 410 nm
+            0.85,   // 400 nm
             0.96,   // 395 nm
             1.00,   // 390 nm
-            0.95,   // 385 nm
-            0.84,   // 380 nm
-            0.55,   // 375 nm
-            0.22,   // 370 nm
-            0.10,   // 365 nm
-            0.05,   // 360 nm
-            0.02,   // 355 nm
+            0.94,   // 385 nm
+            0.75,   // 380 nm
+            0.45,   // 375 nm
+            0.20,   // 370 nm
+            0.08,   // 365 nm
+            0.03,   // 360 nm
+            0.01,   // 355 nm
             0.0,    // 350 nm
             0.0,    // 345 nm
             0.0,    // 340 nm
@@ -422,7 +430,10 @@ namespace OpticalMaterials
 
         const std::vector<G4double> rIndex(photonEnergy.size(), 1.58);
 
-        // 120 cm is the datasheet value; the UV edge below 380 nm is an estimate.
+        // EJ-230:
+        // Eljen specifies a typical light attenuation length of 120 cm.
+        // No wavelength-dependent absorption spectrum is provided by the manufacturer.
+        // Therefore a constant effective absorption length is used as a baseline.
         const std::vector<G4double> absLength =
         {
             120.0 * cm,   // 700 nm
@@ -446,22 +457,22 @@ namespace OpticalMaterials
             120.0 * cm,   // 390 nm
             120.0 * cm,   // 385 nm
             120.0 * cm,   // 380 nm
-            60.0 * cm,    // 375 nm
-            20.0 * cm,    // 370 nm
-            5.0 * cm,     // 365 nm
-            1.0 * cm,     // 360 nm
-            0.2 * cm,     // 355 nm
-            0.05 * cm,    // 350 nm
-            0.01 * cm,    // 345 nm
-            0.005 * cm,   // 340 nm
-            0.002 * cm,   // 335 nm
-            0.001 * cm,   // 330 nm
-            0.0005 * cm,  // 325 nm
-            0.0005 * cm,  // 320 nm
-            0.0005 * cm,  // 315 nm
-            0.0005 * cm,  // 310 nm
-            0.0005 * cm,  // 305 nm
-            0.0005 * cm   // 300 nm
+            120.0 * cm,   // 375 nm
+            120.0 * cm,   // 370 nm
+            120.0 * cm,   // 365 nm
+            120.0 * cm,   // 360 nm
+            120.0 * cm,   // 355 nm
+            120.0 * cm,   // 350 nm
+            120.0 * cm,   // 345 nm
+            120.0 * cm,   // 340 nm
+            120.0 * cm,   // 335 nm
+            120.0 * cm,   // 330 nm
+            120.0 * cm,   // 325 nm
+            120.0 * cm,   // 320 nm
+            120.0 * cm,   // 315 nm
+            120.0 * cm,   // 310 nm
+            120.0 * cm,   // 305 nm
+            120.0 * cm    // 300 nm
         };
 
         auto* scintillatorMPT = new G4MaterialPropertiesTable();
@@ -520,7 +531,9 @@ namespace OpticalMaterials
 
         const auto& photonEnergy = kScintillatorPhotonEnergy;
 
-        // Read off the Eljen EJ-228/EJ-230 emission plot (peak 391 nm), not tabulated data.
+        // Approximate digitization of the Eljen EJ-228/EJ-230 emission plot.
+        // Eljen specifies the emission maximum at 391 nm.
+        // These are NOT tabulated manufacturer values.
         const std::vector<G4double> scintSpectrum =
         {
             0.0,    // 700 nm
@@ -532,23 +545,23 @@ namespace OpticalMaterials
             0.0,    // 550 nm
             0.0,    // 525 nm
             0.005,  // 500 nm
-            0.04,   // 475 nm
-            0.07,   // 460 nm
-            0.12,   // 450 nm
-            0.22,   // 440 nm
-            0.31,   // 430 nm
-            0.45,   // 420 nm
-            0.64,   // 410 nm
-            0.88,   // 400 nm
+            0.03,   // 475 nm
+            0.06,   // 460 nm
+            0.10,   // 450 nm
+            0.18,   // 440 nm
+            0.28,   // 430 nm
+            0.42,   // 420 nm
+            0.60,   // 410 nm
+            0.85,   // 400 nm
             0.96,   // 395 nm
             1.00,   // 390 nm
-            0.95,   // 385 nm
-            0.84,   // 380 nm
-            0.55,   // 375 nm
-            0.22,   // 370 nm
-            0.10,   // 365 nm
-            0.05,   // 360 nm
-            0.02,   // 355 nm
+            0.94,   // 385 nm
+            0.75,   // 380 nm
+            0.45,   // 375 nm
+            0.20,   // 370 nm
+            0.08,   // 365 nm
+            0.03,   // 360 nm
+            0.01,   // 355 nm
             0.0,    // 350 nm
             0.0,    // 345 nm
             0.0,    // 340 nm
@@ -564,46 +577,47 @@ namespace OpticalMaterials
 
         const std::vector<G4double> rIndex(photonEnergy.size(), 1.58);
 
-        // 120 cm is the datasheet value; the UV edge below 380 nm is an estimate.
+        // Simplified assumption for EJ-228:
+        // constant absorption length of 10 cm over the full wavelength range.
         const std::vector<G4double> absLength =
         {
-            120.0 * cm,   // 700 nm
-            120.0 * cm,   // 675 nm
-            120.0 * cm,   // 650 nm
-            120.0 * cm,   // 625 nm
-            120.0 * cm,   // 600 nm
-            120.0 * cm,   // 575 nm
-            120.0 * cm,   // 550 nm
-            120.0 * cm,   // 525 nm
-            120.0 * cm,   // 500 nm
-            120.0 * cm,   // 475 nm
-            120.0 * cm,   // 460 nm
-            120.0 * cm,   // 450 nm
-            120.0 * cm,   // 440 nm
-            120.0 * cm,   // 430 nm
-            120.0 * cm,   // 420 nm
-            120.0 * cm,   // 410 nm
-            120.0 * cm,   // 400 nm
-            120.0 * cm,   // 395 nm
-            120.0 * cm,   // 390 nm
-            120.0 * cm,   // 385 nm
-            120.0 * cm,   // 380 nm
-            60.0 * cm,    // 375 nm
-            20.0 * cm,    // 370 nm
-            5.0 * cm,     // 365 nm
-            1.0 * cm,     // 360 nm
-            0.2 * cm,     // 355 nm
-            0.05 * cm,    // 350 nm
-            0.01 * cm,    // 345 nm
-            0.005 * cm,   // 340 nm
-            0.002 * cm,   // 335 nm
-            0.001 * cm,   // 330 nm
-            0.0005 * cm,  // 325 nm
-            0.0005 * cm,  // 320 nm
-            0.0005 * cm,  // 315 nm
-            0.0005 * cm,  // 310 nm
-            0.0005 * cm,  // 305 nm
-            0.0005 * cm   // 300 nm
+            10.0 * cm,   // 700 nm
+            10.0 * cm,   // 675 nm
+            10.0 * cm,   // 650 nm
+            10.0 * cm,   // 625 nm
+            10.0 * cm,   // 600 nm
+            10.0 * cm,   // 575 nm
+            10.0 * cm,   // 550 nm
+            10.0 * cm,   // 525 nm
+            10.0 * cm,   // 500 nm
+            10.0 * cm,   // 475 nm
+            10.0 * cm,   // 460 nm
+            10.0 * cm,   // 450 nm
+            10.0 * cm,   // 440 nm
+            10.0 * cm,   // 430 nm
+            10.0 * cm,   // 420 nm
+            10.0 * cm,   // 410 nm
+            10.0 * cm,   // 400 nm
+            10.0 * cm,   // 395 nm
+            10.0 * cm,   // 390 nm
+            10.0 * cm,   // 385 nm
+            10.0 * cm,   // 380 nm
+            10.0 * cm,   // 375 nm
+            10.0 * cm,   // 370 nm
+            10.0 * cm,   // 365 nm
+            10.0 * cm,   // 360 nm
+            10.0 * cm,   // 355 nm
+            10.0 * cm,   // 350 nm
+            10.0 * cm,   // 345 nm
+            10.0 * cm,   // 340 nm
+            10.0 * cm,   // 335 nm
+            10.0 * cm,   // 330 nm
+            10.0 * cm,   // 325 nm
+            10.0 * cm,   // 320 nm
+            10.0 * cm,   // 315 nm
+            10.0 * cm,   // 310 nm
+            10.0 * cm,   // 305 nm
+            10.0 * cm    // 300 nm
         };
 
         auto* scintillatorMPT = new G4MaterialPropertiesTable();
