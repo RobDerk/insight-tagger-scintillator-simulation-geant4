@@ -57,6 +57,12 @@ class DetectorConstruction final : public G4VUserDetectorConstruction
             return fScintLengthUnit;
         }
 
+        // Takes effect after /run/reinitializeGeometry
+        void SetScintMaterialName(const G4String& name)
+        {
+            fScintMaterialName = name;
+        }
+
         const G4String& GetScintMaterialName() const
         {
             return fScintMaterialName;

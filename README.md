@@ -63,7 +63,7 @@ Ohne Kommandozeilenargumente wird der interaktive Modus gestartet und `vis.mac` 
 ### Batch-Modus
 
 ```bash
-./Scintillation_Simulation <macro> [events] [energies] [energieeinheit] [lengths] [materials]
+./Scintillation_Simulation <macro> [events] [energies] [lengths] [materials]
 ```
 
 Alle Argumente nach `<macro>` sind optional. **Einzelwerte und Listen** werden für `energies`, `lengths` und `materials` akzeptiert.
@@ -72,17 +72,16 @@ Alle Argumente nach `<macro>` sind optional. **Einzelwerte und Listen** werden f
 |---|---|---|
 | `macro` | Auszuführende Makrodatei, z. B. `run.mac` | Pflicht im Batch-Modus |
 | `events` | Anzahl Events **pro Kombination** (positive ganze Zahl) | `1` |
-| `energies` | Eine Energie oder Liste, z. B. `1`, `500MeV` oder `"[1MeV,2MeV,1GeV]"` | `1` |
-| `energieeinheit` | Standardeinheit für Energieeinträge **ohne** eigene Einheit | `GeV` |
-| `lengths` | Volle Szintillatorlängen mit Einheit, z. B. `70mm` oder `"[50mm,70mm,100mm]"` | `"[70mm]"` |
+| `energies` | Eine Energie oder Liste, z. B. `500`, `1GeV` oder `"[1,2,1GeV]"`; ohne Einheit gilt MeV | `1GeV` |
+| `lengths` | Volle Szintillatorlängen, z. B. `70`, `70mm` oder `"[50,7cm,100mm]"`; ohne Einheit gilt mm | `"[70mm]"` |
 | `materials` | Ein Material oder eine Liste, z. B. `EJ232` oder `"[EJ228,EJ230,EJ232]"` | `EJ232` |
 
 #### Schreibweise der Listen und Einheiten
 
 - Listen werden als **kommagetrennte Werte in eckigen Klammern** angegeben, z. B. `"[EJ228,EJ230]"`. Listenargumente am besten in Anführungszeichen setzen, damit die Shell sie unverändert weitergibt.
 - Ein einzelner Wert funktioniert weiterhin **ohne** eckige Klammern, z. B. `1`, `70mm` oder `EJ232`.
-- **Energien:** Zulässige Einheiten sind `eV`, `keV`, `MeV`, `GeV` und `TeV`. Die Einheit darf pro Listeneintrag stehen, etwa `"[1MeV,2MeV,1GeV]"`. Bei `"[1,2,3]"` gilt für alle Einträge das Argument `energieeinheit`.
-- **Längen:** Jede Länge benötigt ausdrücklich ihre eigene Einheit: `um`, `mm` oder `cm`, z. B. `"[50mm,7cm,100mm]"`. Die Werte müssen positiv sein und in die World-Geometrie passen.
+- **Energien:** Zulässige Einheiten sind `eV`, `keV`, `MeV`, `GeV` und `TeV`; die Groß-/Kleinschreibung ist egal, z. B. `"[1Mev,1Gev]"`. Einträge ohne Einheit gelten als **MeV**, z. B. `"[1,2,3]"` = 1, 2 und 3 MeV. Gemischte Einträge sind möglich, etwa `"[1,2,1GeV]"`.
+- **Längen:** Zulässige Einheiten sind `um`, `mm` und `cm`; auch hier ist die Groß-/Kleinschreibung egal, z. B. `"[70mm,100MM]"`. Einträge ohne Einheit gelten als **mm**, z. B. `"[50,70,100]"` = 50, 70 und 100 mm. Die Werte müssen positiv sein und in die World-Geometrie passen.
 - **Materialien:** Namen sind **groß-/kleinschreibungssensitiv** und müssen in `OpticalMaterials::kScintillatorNames` registriert sein. Beispiele sind `EJ228`, `EJ230`, `EJ232` und `EJ232Q05`, sofern sie in dieser Liste enthalten sind.
 - Leere Listen, nicht unterstützte Einheiten und ungültige Materialnamen führen zu einer Fehlermeldung.
 
@@ -92,29 +91,28 @@ Alle Argumente nach `<macro>` sind optional. **Einzelwerte und Listen** werden f
 # Standardwerte: 1 Event, 1 GeV, 70 mm, EJ232
 ./Scintillation_Simulation run.mac
 
-# Bisherige Syntax mit Einzelwerten bleibt gültig:
-# 1000 Events, 500 MeV, 70 mm, EJ232
-./Scintillation_Simulation run.mac 1000 500 MeV
+# 1000 Events, 500 MeV (ohne Einheit = MeV), 70 mm, EJ232
+./Scintillation_Simulation run.mac 1000 500
 
 # 1000 Events, 1 GeV, 50 mm, EJ230
-./Scintillation_Simulation run.mac 1000 1 GeV "[50mm]" EJ230
+./Scintillation_Simulation run.mac 1000 1GeV 50 EJ230
 
 # Mehrere Längen bei einer Energie und einem Material: 3 Runs
-./Scintillation_Simulation run.mac 1000 1 GeV "[100mm,70mm,50mm]" EJ232
+./Scintillation_Simulation run.mac 1000 1GeV "[100,70,50]" EJ232
 
-# Mehrere Energien ohne Einheit im Array: Standard-Einheit GeV, 3 Runs
-./Scintillation_Simulation run.mac 1000 "[1,2,3]" GeV "[70mm]" EJ232
+# Mehrere Energien ohne Einheit im Array: MeV, 3 Runs
+./Scintillation_Simulation run.mac 1000 "[1,2,3]" "[70mm]" EJ232
 
 # Mehrere Energien mit eigenen Einheiten: 3 Runs
-./Scintillation_Simulation run.mac 1000 "[1MeV,2MeV,1GeV]" MeV "[70mm]" EJ232
+./Scintillation_Simulation run.mac 1000 "[1MeV,2MeV,1GeV]" "[70mm]" EJ232
 
 # Mehrere Materialien bei einer Energie und Länge: 3 Runs
-./Scintillation_Simulation run.mac 1000 1 GeV "[70mm]" "[EJ228,EJ230,EJ232]"
+./Scintillation_Simulation run.mac 1000 1GeV "[70mm]" "[EJ228,EJ230,EJ232]"
 
 # Alle drei Listen kombinieren: 3 Energien × 3 Längen × 4 Materialien = 36 Runs
 ./Scintillation_Simulation run.mac 1000 \
-    "[1MeV,2MeV,1GeV]" MeV \
-    "[50mm,70mm,100mm]" \
+    "[1,2,1000]" \
+    "[50,70,100]" \
     "[EJ228,EJ230,EJ232,EJ232Q05]"
 ```
 
@@ -124,11 +122,10 @@ Beim letzten Beispiel werden **36 Runs mit jeweils 1.000 Events**, also insgesam
 
 Die Simulation bildet das **kartesische Produkt** aus allen angegebenen Materialien, Längen und Energien. Die Schleifenreihenfolge ist:
 
-1. **Material** auswählen.
-2. **Länge** auswählen und einen neuen `RunManager` mit passender `DetectorConstruction` erstellen.
-3. Makro für diese Material-Längen-Kombination ausführen.
-4. **Alle Energien** nacheinander über `/gun/energy` einstellen und jeweils `/run/beamOn <events>` ausführen.
-5. Den `RunManager` freigeben und zur nächsten Material-Längen-Kombination wechseln.
+1. Einen einzigen `RunManager` anlegen und das Makro einmal ausführen.
+2. **Material** und **Länge** auswählen. Ab der zweiten Kombination wird die Geometrie mit `/run/reinitializeGeometry true` neu aufgebaut.
+3. **Alle Energien** nacheinander über `/gun/energy` einstellen und jeweils `/run/beamOn <events>` ausführen.
+4. Zur nächsten Material-Längen-Kombination wechseln, am Ende den `RunManager` einmal freigeben.
 
 Die Anzahl der Runs ergibt sich aus:
 
@@ -137,7 +134,7 @@ Runs = Anzahl Materialien × Anzahl Längen × Anzahl Energien
 Gesamtzahl Events = Runs × Events pro Run
 ```
 
-**Hinweis zu `run.mac`:** Das Makro wird **einmal pro Material-Längen-Kombination** ausgeführt, nicht einmal pro Energie. Es sollte den Run initialisieren, bevor `/run/beamOn` aufgerufen wird. Die Energie wird nach dem Makro durch `/gun/energy` gesetzt; eine Energieeinstellung im Makro wird daher für die Batch-Runs überschrieben. Enthält das Makro selbst `/run/beamOn`, löst es zusätzliche Runs aus.
+**Hinweis zu `run.mac`:** Das Makro wird **einmal pro Programmstart** ausgeführt, nicht pro Kombination. Es muss `/run/initialize` enthalten. Die Energie wird danach für jeden Run durch `/gun/energy` gesetzt; eine Energieeinstellung im Makro wird daher überschrieben. Enthält das Makro selbst `/run/beamOn`, löst es zusätzliche Runs aus.
 
 ## Ausgabe
 

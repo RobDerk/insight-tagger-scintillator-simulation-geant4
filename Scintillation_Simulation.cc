@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cctype>
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -80,7 +82,23 @@ namespace
                                 [](unsigned char c) { return c == ' ' || c == '\t'; }),
                 unit.end());
         if (unit.empty()) unit = defaultUnit;
-        return std::find(allowedUnits.begin(), allowedUnits.end(), unit) != allowedUnits.end();
+
+        // Case-insensitive match; continue with the canonical spelling Geant4 expects (e.g. "MeV")
+        const auto toLower = [](std::string s)
+        {
+            std::transform(s.begin(), s.end(), s.begin(),
+                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+            return s;
+        };
+
+        const auto match = std::find_if(allowedUnits.begin(), allowedUnits.end(),
+                                        [&](const std::string& allowed)
+                                        { return toLower(allowed) == toLower(unit); });
+
+        if (match == allowedUnits.end()) return false;
+
+        unit = *match;
+        return true;
     }
 
     bool ParseLengths(const std::string& text,
@@ -100,9 +118,9 @@ namespace
         {
             G4double value = 0.0;
             std::string unit;
-            if (!ParsePositiveQuantity(token, "", {"um", "mm", "cm"}, value, unit))
+            if (!ParsePositiveQuantity(token, "mm", {"um", "mm", "cm"}, value, unit))
             {
-                G4cerr << "Invalid length (unit required: um, mm, cm): " << token << G4endl;
+                G4cerr << "Invalid length (unit: um, mm, cm; default mm): " << token << G4endl;
                 return false;
             }
             const G4double length = value * G4UnitDefinition::GetValueOf(unit);
@@ -118,8 +136,7 @@ namespace
         return true;
     }
 
-    bool ParseEnergies(const std::string& text, const std::string& defaultUnit,
-                    std::vector<EnergySetting>& energies)
+    bool ParseEnergies(const std::string& text, std::vector<EnergySetting>& energies)
     {
         energies.clear();
         std::vector<std::string> tokens;
@@ -133,7 +150,7 @@ namespace
         {
             G4double value = 0.0;
             std::string unit;
-            if (!ParsePositiveQuantity(token, defaultUnit, {"eV", "keV", "MeV", "GeV", "TeV"},
+            if (!ParsePositiveQuantity(token, "MeV", {"eV", "keV", "MeV", "GeV", "TeV"},
                                     value, unit))
             {
                 G4cerr << "Invalid energy or unit: " << token << G4endl;
@@ -174,18 +191,16 @@ namespace
 } // namespace
 
 // Batch usage:
-// ./Scintillation_Simulation <macro> [events] [energies] [defaultEnergyUnit] [lengths] [materials]
-// Example: ./Scintillation_Simulation run.mac 1000 '[1MeV,2MeV,1GeV]' MeV '[50mm,70mm]' '[EJ228,EJ230]'
-// Also supports old scalar arguments: run.mac 1000 1 GeV '[70mm]' EJ232
-// For numeric energy entries without suffix, defaultEnergyUnit applies.
+// ./Scintillation_Simulation <macro> [events] [energies] [lengths] [materials]
+// Example: ./Scintillation_Simulation run.mac 1000 '[1MeV,2MeV,1GeV]' '[50mm,70mm]' '[EJ228,EJ230]'
+// Entries without a unit are MeV (energies) and mm (lengths).
 // No arguments: interactive UI with vis.mac.
 int main(int argc, char** argv)
 {
     G4UIExecutive* ui = (argc == 1) ? new G4UIExecutive(argc, argv) : nullptr;
 
     G4int numberOfEvents = 1;
-    std::string energiesText = "1";
-    std::string defaultEnergyUnit = "GeV";
+    std::string energiesText = "1GeV";
     std::string scintLengthText = "[70mm]";
     std::string scintMaterialsText = "EJ232";
 
@@ -202,10 +217,9 @@ int main(int argc, char** argv)
             }
         }
         if (argc >= 4) energiesText = argv[3];
-        if (argc >= 5) defaultEnergyUnit = argv[4];
-        if (argc >= 6) scintLengthText = argv[5];
-        if (argc >= 7) scintMaterialsText = argv[6];
-        if (argc > 7)
+        if (argc >= 5) scintLengthText = argv[4];
+        if (argc >= 6) scintMaterialsText = argv[5];
+        if (argc > 6)
         {
             G4cerr << "Too many command-line arguments" << G4endl;
             return 1;
@@ -217,7 +231,7 @@ int main(int argc, char** argv)
     std::vector<std::string> scintUnits;
     std::vector<G4String> scintMaterials;
 
-    if (!ParseEnergies(energiesText, defaultEnergyUnit, energies) ||
+    if (!ParseEnergies(energiesText, energies) ||
         !ParseLengths(scintLengthText, scintLengths, scintUnits) ||
         !ParseMaterials(scintMaterialsText, scintMaterials))
     {
@@ -234,25 +248,42 @@ int main(int argc, char** argv)
         const std::size_t nRuns = scintMaterials.size() * scintLengths.size() * energies.size();
         std::size_t runIndex = 0;
 
-        // Build a fresh detector/run manager for each material and length.
-        // This avoids requiring a SetScintMaterial() method in DetectorConstruction.
+        // One run manager for the whole process; the geometry is rebuilt between runs.
+        auto* runManager = G4RunManagerFactory::CreateRunManager(
+            G4RunManagerType::SerialOnly);
+
+        auto* detector = new DetectorConstruction(
+            scintLengths.front(), scintUnits.front(), scintMaterials.front());
+
+        runManager->SetUserInitialization(detector);
+        runManager->SetUserInitialization(new PhysicsList());
+        runManager->SetUserInitialization(new ActionInitialization(true));
+
+        // The macro contains /run/initialize, so it runs only once
+        if (uiManager->ApplyCommand("/control/execute " + macroFile) != 0)
+        {
+            G4cerr << "Failed to execute macro: " << macroFile << G4endl;
+            delete runManager;
+            return 1;
+        }
+
+        bool firstGeometry = true;
+
         for (const auto& material : scintMaterials)
         {
             for (std::size_t i = 0; i < scintLengths.size(); ++i)
             {
-                auto* runManager = G4RunManagerFactory::CreateRunManager(
-                    G4RunManagerType::SerialOnly);
-                runManager->SetUserInitialization(
-                    new DetectorConstruction(scintLengths[i], scintUnits[i], material));
-                runManager->SetUserInitialization(new PhysicsList());
-                runManager->SetUserInitialization(new ActionInitialization(true));
-
-                if (uiManager->ApplyCommand("/control/execute " + macroFile) != 0)
+                // The first combination was already built by the constructor arguments
+                if (!firstGeometry)
                 {
-                    G4cerr << "Failed to execute macro: " << macroFile << G4endl;
-                    delete runManager;
-                    return 1;
+                    detector->SetScintMaterialName(material);
+                    detector->SetScintLengthY(scintLengths[i], scintUnits[i]);
+
+                    uiManager->ApplyCommand("/run/reinitializeGeometry true");
+                    uiManager->ApplyCommand("/run/physicsModified");
                 }
+
+                firstGeometry = false;
 
                 for (const auto& energy : energies)
                 {
@@ -283,9 +314,10 @@ int main(int argc, char** argv)
                         return 1;
                     }
                 }
-                delete runManager;
             }
         }
+
+        delete runManager;
     }
     else
     {

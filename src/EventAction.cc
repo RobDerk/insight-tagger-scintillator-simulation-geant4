@@ -59,12 +59,14 @@ void EventAction::EndOfEventAction(const G4Event* event)
     G4double primaryEnergy = 0.;
     G4double fScintLengthY = 0.;
     G4String scintLengthUnit = "mm";
+    G4String scintMaterialName = "n/a";
 
     if (const auto* detector = static_cast<const DetectorConstruction*>(
         G4RunManager::GetRunManager()->GetUserDetectorConstruction()))
     {
         fScintLengthY = detector->GetScintLengthY();
         scintLengthUnit = detector->GetScintLengthUnit();
+        scintMaterialName = detector->GetScintMaterialName();
     }
 
     if (const auto* vertex = event->GetPrimaryVertex())
@@ -82,10 +84,11 @@ void EventAction::EndOfEventAction(const G4Event* event)
     G4cout
     << "\n------------------------------------\n"
     << "Event " << eventID << "\n"
-    << "  Primary Particle  : " << particleName << "\n"
+    << "  Material          : " << scintMaterialName << "\n"
     << "  Primary Energy    : " << G4BestUnit(primaryEnergy, "Energy") << "\n"
-    << "  Length Y          : " << fScintLengthY / G4UnitDefinition::GetValueOf(scintLengthUnit)
+    << "  Length            : " << fScintLengthY / G4UnitDefinition::GetValueOf(scintLengthUnit) 
     << " " << scintLengthUnit << "\n"
+    << "  Primary Particle  : " << particleName << "\n"
     << "  Energy deposit    : " << G4BestUnit(fEdep, "Energy") << "\n"
     << "  Electron entry t  : ";
 
