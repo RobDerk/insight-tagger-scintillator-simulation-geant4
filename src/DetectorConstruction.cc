@@ -198,59 +198,60 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
         }
     }
 
+    // Reflection
     // Reflective foil on the four long side faces (+-x, +-z)
-    auto* reflectorSurface = OpticalMaterials::CreateReflectorSurface();
+    // auto* reflectorSurface = OpticalMaterials::CreateReflectorSurface();
     
-    auto* reflectorXLogical = new G4LogicalVolume(
-        new G4Box(
-            "ReflectorXSolid",
-            collectorHalfThickness,
-            scint_size_y,
-            scint_size_z
-        ),
-        world_material,
-        "ReflectorXLogical"
-    );
+    // auto* reflectorXLogical = new G4LogicalVolume(
+    //     new G4Box(
+    //         "ReflectorXSolid",
+    //         collectorHalfThickness,
+    //         scint_size_y,
+    //         scint_size_z
+    //     ),
+    //     world_material,
+    //     "ReflectorXLogical"
+    // );
 
-    auto* reflectorZLogical = new G4LogicalVolume(
-        new G4Box(
-            "ReflectorZSolid",
-            scint_size_x,
-            scint_size_y,
-            collectorHalfThickness
-        ),
-        world_material,
-        "ReflectorZLogical"
-    );
+    // auto* reflectorZLogical = new G4LogicalVolume(
+    //     new G4Box(
+    //         "ReflectorZSolid",
+    //         scint_size_x,
+    //         scint_size_y,
+    //         collectorHalfThickness
+    //     ),
+    //     world_material,
+    //     "ReflectorZLogical"
+    // );
 
-    const G4double reflectorOffsetX = scint_size_x + collectorHalfThickness;
-    const G4double reflectorOffsetZ = scint_size_z + collectorHalfThickness;
+    // const G4double reflectorOffsetX = scint_size_x + collectorHalfThickness;
+    // const G4double reflectorOffsetZ = scint_size_z + collectorHalfThickness;
 
-    auto placeReflector = [&](const G4String& name, G4LogicalVolume* logical, const G4ThreeVector& offset)
-    {
-        auto* reflectorPhysical = new G4PVPlacement(
-            nullptr,
-            G4ThreeVector(scint_place_x0, scint_place_y0, scint_place_z0) + offset,
-            logical,
-            name,
-            logicWorld,
-            false,
-            0,
-            checkOverlaps
-        );
+    // auto placeReflector = [&](const G4String& name, G4LogicalVolume* logical, const G4ThreeVector& offset)
+    // {
+    //     auto* reflectorPhysical = new G4PVPlacement(
+    //         nullptr,
+    //         G4ThreeVector(scint_place_x0, scint_place_y0, scint_place_z0) + offset,
+    //         logical,
+    //         name,
+    //         logicWorld,
+    //         false,
+    //         0,
+    //         checkOverlaps
+    //     );
 
-        new G4LogicalBorderSurface(
-            "ScintillatorTo" + name + "Surface",
-            scintillatorPhysical,
-            reflectorPhysical,
-            reflectorSurface
-        );
-    };
+    //     new G4LogicalBorderSurface(
+    //         "ScintillatorTo" + name + "Surface",
+    //         scintillatorPhysical,
+    //         reflectorPhysical,
+    //         reflectorSurface
+    //     );
+    // };
 
-    placeReflector("ReflectorXPlus", reflectorXLogical, G4ThreeVector(reflectorOffsetX, 0.0, 0.0));
-    placeReflector("ReflectorXMinus", reflectorXLogical, G4ThreeVector(-reflectorOffsetX, 0.0, 0.0));
-    placeReflector("ReflectorZPlus", reflectorZLogical, G4ThreeVector(0.0, 0.0, reflectorOffsetZ));
-    placeReflector("ReflectorZMinus", reflectorZLogical, G4ThreeVector(0.0, 0.0, -reflectorOffsetZ));
+    // placeReflector("ReflectorXPlus", reflectorXLogical, G4ThreeVector(reflectorOffsetX, 0.0, 0.0));
+    // placeReflector("ReflectorXMinus", reflectorXLogical, G4ThreeVector(-reflectorOffsetX, 0.0, 0.0));
+    // placeReflector("ReflectorZPlus", reflectorZLogical, G4ThreeVector(0.0, 0.0, reflectorOffsetZ));
+    // placeReflector("ReflectorZMinus", reflectorZLogical, G4ThreeVector(0.0, 0.0, -reflectorOffsetZ));
 
 
     return physWorld;

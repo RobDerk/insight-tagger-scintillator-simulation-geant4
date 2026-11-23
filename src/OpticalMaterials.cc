@@ -665,6 +665,7 @@ namespace OpticalMaterials
         return ej228;
     }
 
+    // Create Scintillator for command input by name
     G4Material* CreateScintillator(const G4String& name)
     {
         if (name == "EJ232") return CreateEJ232();
@@ -675,6 +676,7 @@ namespace OpticalMaterials
         return nullptr;
     }
 
+    // Create an ideal photon detector surface with a given PDE file
     G4OpticalSurface* CreateIdealPhotonDetectorSurface(const G4String& pdeFile)
     {
         auto* detectorSurface = new G4OpticalSurface("IdealPhotonCollectionSurface");
@@ -717,6 +719,8 @@ namespace OpticalMaterials
         return detectorSurface;
     }
 
+    // Create Saphir Glass material
+    // Eventually, this material could be used for cerenkov tagger!?
     G4Material* Saphir_Glass()
     {
         auto* nist = G4NistManager::Instance();
@@ -753,6 +757,7 @@ namespace OpticalMaterials
 
     }
 
+    // Create a reflector surface with specified reflectivity and efficiency
     G4OpticalSurface* CreateReflectorSurface()
     {
         auto* reflectorSurface = new G4OpticalSurface("ReflectorSurface");

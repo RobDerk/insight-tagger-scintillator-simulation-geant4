@@ -17,337 +17,291 @@
 #include "OpticalMaterials.hh"
 #include "PhysicsList.hh"
 
-
-// Parses "[100mm,7cm,70mm]"; brackets and a unit (um, mm, cm) per entry are required.
-// The end-face collectors must fit inside the world (DetectorConstruction::kMaxScintLengthY).
-static bool ParseLengths(
-    const std::string& text,
-    std::vector<G4double>& lengths,
-    std::vector<std::string>& units)
+namespace
 {
-    std::string cleaned;
-
-    for (const char c : text)
+    struct EnergySetting
     {
-        if (c != ' ')
+        G4double value;
+        G4String unit;
+    };
+
+    // Allow either one item ("EJ232") or a bracketed comma-separated list.
+    // An empty item or list is an error.
+    bool SplitArgument(
+        const std::string& text,
+        std::vector<std::string>& items)
+    {
+        items.clear();
+        std::string contents = text;
+        if (!contents.empty() && contents.front() == '[')
         {
-            cleaned += c;
+            if (contents.size() < 2 || contents.back() != ']') return false;
+            contents = contents.substr(1, contents.size() - 2);
         }
+        else if (contents.find_first_of("[],") != std::string::npos)
+        {
+            return false;
+        }
+
+        std::istringstream input(contents);
+        std::string token;
+        while (std::getline(input, token, ','))
+        {
+            const auto first = token.find_first_not_of(" \t\r\n");
+            if (first == std::string::npos) return false;
+            const auto last = token.find_last_not_of(" \t\r\n");
+            token = token.substr(first, last - first + 1);
+            if (token.find_first_of("[]") != std::string::npos) return false;
+            items.push_back(token);
+        }
+        return !items.empty() && contents.back() != ',';
     }
 
-    if (cleaned.size() < 2 || cleaned.front() != '[' || cleaned.back() != ']')
-    {
-        G4cerr << "Lengths must be given as [70mm,100mm,...]: " << text << G4endl;
-        return false;
-    }
-
-    std::istringstream stream(cleaned.substr(1, cleaned.size() - 2));
-    std::string token;
-
-    while (std::getline(stream, token, ','))
+    bool ParsePositiveQuantity(const std::string& token,
+                           const std::string& defaultUnit,
+                           const std::vector<std::string>& allowedUnits,
+                           G4double& value, std::string& unit)
     {
         std::size_t pos = 0;
-        G4double value = 0.0;
-
         try
         {
             value = std::stod(token, &pos);
         }
         catch (...)
         {
-            G4cerr << "Invalid scintillator length: " << token << G4endl;
             return false;
         }
 
-        const std::string unit = token.substr(pos);
+        if (!std::isfinite(value) || value <= 0.0) return false;
 
-        G4double unitFactor = 0.0;
-
-        if (unit == "um") unitFactor = um;
-        else if (unit == "mm") unitFactor = mm;
-        else if (unit == "cm") unitFactor = cm;
-        else
-        {
-            G4cerr << "Invalid or missing length unit in '" << token << "' (use um, mm or cm)" << G4endl;
-            return false;
-        }
-
-        const G4double length = value * unitFactor;
-
-        if (length <= 0.0 || length >= DetectorConstruction::kMaxScintLengthY)
-        {
-            G4cerr << "Scintillator length must be > 0 and < "
-                   << DetectorConstruction::kMaxScintLengthY / mm
-                   << " mm (world size): " << token << G4endl;
-            return false;
-        }
-
-        lengths.push_back(length);
-        units.push_back(unit);
+        unit = token.substr(pos);
+        // Ignore whitespace between the value and the unit.
+        unit.erase(std::remove_if(unit.begin(), unit.end(),
+                                [](unsigned char c) { return c == ' ' || c == '\t'; }),
+                unit.end());
+        if (unit.empty()) unit = defaultUnit;
+        return std::find(allowedUnits.begin(), allowedUnits.end(), unit) != allowedUnits.end();
     }
 
-    if (lengths.empty())
+    bool ParseLengths(const std::string& text,
+                    std::vector<G4double>& lengths,
+                    std::vector<std::string>& units)
     {
-        G4cerr << "No scintillator length given" << G4endl;
-        return false;
+        lengths.clear();
+        units.clear();
+        std::vector<std::string> tokens;
+        if (!SplitArgument(text, tokens))
+        {
+            G4cerr << "Invalid lengths (example: [70mm,100mm]): " << text << G4endl;
+            return false;
+        }
+
+        for (const auto& token : tokens)
+        {
+            G4double value = 0.0;
+            std::string unit;
+            if (!ParsePositiveQuantity(token, "", {"um", "mm", "cm"}, value, unit))
+            {
+                G4cerr << "Invalid length (unit required: um, mm, cm): " << token << G4endl;
+                return false;
+            }
+            const G4double length = value * G4UnitDefinition::GetValueOf(unit);
+            if (length >= DetectorConstruction::kMaxScintLengthY)
+            {
+                G4cerr << "Scintillator length must be < "
+                    << DetectorConstruction::kMaxScintLengthY / mm << " mm: " << token << G4endl;
+                return false;
+            }
+            lengths.push_back(length);
+            units.push_back(unit);
+        }
+        return true;
     }
 
-    return true;
-}
+    bool ParseEnergies(const std::string& text, const std::string& defaultUnit,
+                    std::vector<EnergySetting>& energies)
+    {
+        energies.clear();
+        std::vector<std::string> tokens;
+        if (!SplitArgument(text, tokens))
+        {
+            G4cerr << "Invalid energies (example: [1MeV,2MeV,1GeV]): " << text << G4endl;
+            return false;
+        }
 
-// Usage (batch): ./Scintillation_Simulation <macro> [events] [energy] [energyUnit] [lengths] [material]
-// lengths: "[70mm,100mm,...]" (quoted, unit required per entry); one run per length.
-// material: EJ232 (default), EJ232Q05 or EJ230.
-// No arguments: interactive UI mode with vis.mac.
+        for (const auto& token : tokens)
+        {
+            G4double value = 0.0;
+            std::string unit;
+            if (!ParsePositiveQuantity(token, defaultUnit, {"eV", "keV", "MeV", "GeV", "TeV"},
+                                    value, unit))
+            {
+                G4cerr << "Invalid energy or unit: " << token << G4endl;
+                return false;
+            }
+            energies.push_back({value, unit});
+        }
+        return true;
+    }
+
+    bool ParseMaterials(const std::string& text, std::vector<G4String>& materials)
+    {
+        materials.clear();
+        std::vector<std::string> tokens;
+        if (!SplitArgument(text, tokens))
+        {
+            G4cerr << "Invalid materials (example: [EJ228,EJ230]): " << text << G4endl;
+            return false;
+        }
+
+        for (const auto& token : tokens)
+        {
+            const G4String material = token;
+            if (std::find(OpticalMaterials::kScintillatorNames.begin(),
+                        OpticalMaterials::kScintillatorNames.end(),
+                        material) == OpticalMaterials::kScintillatorNames.end())
+            {
+                G4cerr << "Unknown scintillator material: " << material << " (allowed:";
+                for (const auto& name : OpticalMaterials::kScintillatorNames)
+                    G4cerr << " " << name;
+                G4cerr << ")" << G4endl;
+                return false;
+            }
+            materials.push_back(material);
+        }
+        return true;
+    }
+} // namespace
+
+// Batch usage:
+// ./Scintillation_Simulation <macro> [events] [energies] [defaultEnergyUnit] [lengths] [materials]
+// Example: ./Scintillation_Simulation run.mac 1000 '[1MeV,2MeV,1GeV]' MeV '[50mm,70mm]' '[EJ228,EJ230]'
+// Also supports old scalar arguments: run.mac 1000 1 GeV '[70mm]' EJ232
+// For numeric energy entries without suffix, defaultEnergyUnit applies.
+// No arguments: interactive UI with vis.mac.
 int main(int argc, char** argv)
 {
-    G4UIExecutive* ui = nullptr;
+    G4UIExecutive* ui = (argc == 1) ? new G4UIExecutive(argc, argv) : nullptr;
 
-    if (argc == 1)
-    {
-        ui = new G4UIExecutive(argc, argv);
-    }
-
-    // Defaults
     G4int numberOfEvents = 1;
-    G4double energyValue = 1.0;
-    G4String energyUnit = "GeV";
-
-    // Full lengths of the scintillator along y, one run per entry
+    std::string energiesText = "1";
+    std::string defaultEnergyUnit = "GeV";
     std::string scintLengthText = "[70mm]";
-    std::vector<G4double> scintLengths = {70.0 * mm};
-    std::vector<std::string> scintUnits = {"mm"};
-    G4String scintMaterial = "EJ232";
-
-    // =========================================================
-    // Command line arguments (batch mode)
-    // =========================================================
+    std::string scintMaterialsText = "EJ232";
 
     if (!ui)
     {
         if (argc >= 3)
         {
-            try
-            {
-                numberOfEvents =
-                    std::stoi(argv[2]);
-            }
-            catch (...)
-            {
-                G4cerr
-                    << "Invalid number of events: "
-                    << argv[2]
-                    << G4endl;
-
-                return 1;
-            }
-
-
+            try { numberOfEvents = std::stoi(argv[2]); }
+            catch (...) { G4cerr << "Invalid number of events: " << argv[2] << G4endl; return 1; }
             if (numberOfEvents <= 0)
             {
-                G4cerr
-                    << "Number of events must be > 0"
-                    << G4endl;
-
+                G4cerr << "Number of events must be > 0" << G4endl;
                 return 1;
             }
         }
-
-        if (argc >= 4)
+        if (argc >= 4) energiesText = argv[3];
+        if (argc >= 5) defaultEnergyUnit = argv[4];
+        if (argc >= 6) scintLengthText = argv[5];
+        if (argc >= 7) scintMaterialsText = argv[6];
+        if (argc > 7)
         {
-            try
-            {
-                energyValue =
-                    std::stod(argv[3]);
-            }
-            catch (...)
-            {
-                G4cerr
-                    << "Invalid energy value: "
-                    << argv[3]
-                    << G4endl;
-
-                return 1;
-            }
-
-
-            if (energyValue <= 0.0)
-            {
-                G4cerr
-                    << "Energy must be > 0"
-                    << G4endl;
-
-                return 1;
-            }
-        }
-
-        if (argc >= 5)
-        {
-            energyUnit = argv[4];
-        }
-
-        if (argc >= 6)
-        {
-            scintLengthText = argv[5];
-        }
-
-        scintLengths.clear();
-        scintUnits.clear();
-
-        if (!ParseLengths(scintLengthText, scintLengths, scintUnits))
-        {
-            return 1;
-        }
-
-        if (argc >= 7)
-        {
-            scintMaterial = argv[6];
-        }
-
-        if (std::find(
-                OpticalMaterials::kScintillatorNames.begin(),
-                OpticalMaterials::kScintillatorNames.end(),
-                scintMaterial) == OpticalMaterials::kScintillatorNames.end())
-        {
-            G4cerr << "Invalid material: " << scintMaterial << " (use";
-
-            for (const auto& name : OpticalMaterials::kScintillatorNames)
-            {
-                G4cerr << " " << name;
-            }
-
-            G4cerr << ")" << G4endl;
-
+            G4cerr << "Too many command-line arguments" << G4endl;
             return 1;
         }
     }
 
+    std::vector<EnergySetting> energies;
+    std::vector<G4double> scintLengths;
+    std::vector<std::string> scintUnits;
+    std::vector<G4String> scintMaterials;
 
-    // =========================================================
-    // Run Manager
-    // =========================================================
+    if (!ParseEnergies(energiesText, defaultEnergyUnit, energies) ||
+        !ParseLengths(scintLengthText, scintLengths, scintUnits) ||
+        !ParseMaterials(scintMaterialsText, scintMaterials))
+    {
+        delete ui;
+        return 1;
+    }
 
-    auto runManager =
-        G4RunManagerFactory::CreateRunManager(
-            G4RunManagerType::SerialOnly
-        );
-
-
-    auto detector = new DetectorConstruction(scintLengths.front(), scintUnits.front(), scintMaterial);
-
-    runManager->SetUserInitialization(detector);
-
-    runManager->SetUserInitialization(
-        new PhysicsList()
-    );
-
-    runManager->SetUserInitialization(
-        new ActionInitialization(ui == nullptr)
-    );
-
-
-    auto uiManager =
-        G4UImanager::GetUIpointer();
-
-
-    // =========================================================
-    // BATCH MODE
-    // =========================================================
+    auto* uiManager = G4UImanager::GetUIpointer();
 
     if (!ui)
     {
-        G4String macroFile = argv[1];
+        const G4String macroFile = argv[1];
+        const G4String beamOnCommand = "/run/beamOn " + std::to_string(numberOfEvents);
+        const std::size_t nRuns = scintMaterials.size() * scintLengths.size() * energies.size();
+        std::size_t runIndex = 0;
 
-        uiManager->ApplyCommand(
-            "/control/execute " + macroFile
-        );
-
-        // set energy of particle
-
-        const G4String energyCommand =
-            "/gun/energy "
-            + std::to_string(energyValue)
-            + " "
-            + energyUnit;
-
-
-        G4cout
-            << "\nSetting beam energy: "
-            << energyValue
-            << " "
-            << energyUnit
-            << G4endl;
-
-
-        uiManager->ApplyCommand(
-            energyCommand
-        );
-
-        // Start simulation: one run per scintillator length
-
-        const G4String beamOnCommand =
-            "/run/beamOn "
-            + std::to_string(numberOfEvents);
-
-        for (std::size_t i = 0; i < scintLengths.size(); ++i)
+        // Build a fresh detector/run manager for each material and length.
+        // This avoids requiring a SetScintMaterial() method in DetectorConstruction.
+        for (const auto& material : scintMaterials)
         {
-            if (i > 0)
+            for (std::size_t i = 0; i < scintLengths.size(); ++i)
             {
-                // Geometry is rebuilt with the new length
-                detector->SetScintLengthY(scintLengths[i], scintUnits[i]);
+                auto* runManager = G4RunManagerFactory::CreateRunManager(
+                    G4RunManagerType::SerialOnly);
+                runManager->SetUserInitialization(
+                    new DetectorConstruction(scintLengths[i], scintUnits[i], material));
+                runManager->SetUserInitialization(new PhysicsList());
+                runManager->SetUserInitialization(new ActionInitialization(true));
 
-                uiManager->ApplyCommand("/run/reinitializeGeometry true");
+                if (uiManager->ApplyCommand("/control/execute " + macroFile) != 0)
+                {
+                    G4cerr << "Failed to execute macro: " << macroFile << G4endl;
+                    delete runManager;
+                    return 1;
+                }
+
+                for (const auto& energy : energies)
+                {
+                    ++runIndex;
+                    const G4String energyCommand =
+                        "/gun/energy " + std::to_string(energy.value) + " " + energy.unit;
+                    if (uiManager->ApplyCommand(energyCommand) != 0)
+                    {
+                        G4cerr << "Failed to set beam energy: " << energyCommand << G4endl;
+                        delete runManager;
+                        return 1;
+                    }
+
+                    G4cout << "\n===================================="
+                           << "\nStarting simulation " << runIndex << "/" << nRuns
+                           << "\nEvents : " << numberOfEvents
+                           << "\nEnergy : " << energy.value << " " << energy.unit
+                           << "\nScint length (y) : "
+                           << scintLengths[i] / G4UnitDefinition::GetValueOf(scintUnits[i])
+                           << " " << scintUnits[i]
+                           << "\nScint material : " << material
+                           << "\n====================================\n" << G4endl;
+
+                    if (uiManager->ApplyCommand(beamOnCommand) != 0)
+                    {
+                        G4cerr << "BeamOn command failed" << G4endl;
+                        delete runManager;
+                        return 1;
+                    }
+                }
+                delete runManager;
             }
-
-            G4cout
-                << "\n===================================="
-                << "\nStarting simulation " << (i + 1) << "/" << scintLengths.size()
-                << "\nEvents : "
-                << numberOfEvents
-                << "\nEnergy : "
-                << energyValue
-                << " "
-                << energyUnit
-                << "\nScint length (y) : "
-                << scintLengths[i] / G4UnitDefinition::GetValueOf(scintUnits[i])
-                << " " << scintUnits[i]
-                << "\nScint material : " << scintMaterial
-                << "\n====================================\n"
-                << G4endl;
-
-            uiManager->ApplyCommand(
-                beamOnCommand
-            );
         }
     }
-
-    // UI Mode
     else
     {
-        auto visManager =
-            new G4VisExecutive(argc, argv);
+        auto* runManager = G4RunManagerFactory::CreateRunManager(G4RunManagerType::SerialOnly);
+        runManager->SetUserInitialization(
+            new DetectorConstruction(scintLengths.front(), scintUnits.front(), scintMaterials.front()));
+        runManager->SetUserInitialization(new PhysicsList());
+        runManager->SetUserInitialization(new ActionInitialization(false));
 
+        auto* visManager = new G4VisExecutive(argc, argv);
         visManager->Initialize();
-
-
-        uiManager->ApplyCommand(
-            "/control/execute vis.mac"
-        );
-
+        uiManager->ApplyCommand("/control/execute vis.mac");
         ui->SessionStart();
-
-
-        G4cout
-            << "Starting simulation in UI mode"
-            << G4endl;
-
-
         delete visManager;
+        delete runManager;
         delete ui;
     }
-
-
-    delete runManager;
-
     return 0;
 }
