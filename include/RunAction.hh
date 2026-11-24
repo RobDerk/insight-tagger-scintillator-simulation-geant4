@@ -27,19 +27,13 @@ class RunAction : public G4UserRunAction
       G4int nBottom) const;
 
   private:
-    // false: no ntuple and no CSV files (interactive UI mode)
+    // false: no ntuple and no output files (interactive UI mode, --dry-run)
     G4bool fWriteOutput = true;
 
     G4Accumulable<G4double> fEdep = 0.;
     G4Accumulable<G4double> fEdep2 = 0.;
 
     std::chrono::steady_clock::time_point fRunStart;
-
-    // Base name of the current run's CSV, e.g. "70mm"
-    G4String fBaseName;
-
-    // Subfolder of data/ for the current run, e.g. "EJ230/1GeV"
-    std::string fOutputSubDir;
 };
 
 #endif

@@ -581,43 +581,43 @@ namespace OpticalMaterials
         // constant absorption length of 10 cm over the full wavelength range.
         const std::vector<G4double> absLength =
         {
-            10.0 * cm,   // 700 nm
-            10.0 * cm,   // 675 nm
-            10.0 * cm,   // 650 nm
-            10.0 * cm,   // 625 nm
-            10.0 * cm,   // 600 nm
-            10.0 * cm,   // 575 nm
-            10.0 * cm,   // 550 nm
-            10.0 * cm,   // 525 nm
-            10.0 * cm,   // 500 nm
-            10.0 * cm,   // 475 nm
-            10.0 * cm,   // 460 nm
-            10.0 * cm,   // 450 nm
-            10.0 * cm,   // 440 nm
-            10.0 * cm,   // 430 nm
-            10.0 * cm,   // 420 nm
-            10.0 * cm,   // 410 nm
-            10.0 * cm,   // 400 nm
-            10.0 * cm,   // 395 nm
-            10.0 * cm,   // 390 nm
-            10.0 * cm,   // 385 nm
-            10.0 * cm,   // 380 nm
-            10.0 * cm,   // 375 nm
-            10.0 * cm,   // 370 nm
-            10.0 * cm,   // 365 nm
-            10.0 * cm,   // 360 nm
-            10.0 * cm,   // 355 nm
-            10.0 * cm,   // 350 nm
-            10.0 * cm,   // 345 nm
-            10.0 * cm,   // 340 nm
-            10.0 * cm,   // 335 nm
-            10.0 * cm,   // 330 nm
-            10.0 * cm,   // 325 nm
-            10.0 * cm,   // 320 nm
-            10.0 * cm,   // 315 nm
-            10.0 * cm,   // 310 nm
-            10.0 * cm,   // 305 nm
-            10.0 * cm    // 300 nm
+            20.0 * cm,   // 700 nm
+            20.0 * cm,   // 675 nm
+            20.0 * cm,   // 650 nm
+            20.0 * cm,   // 625 nm
+            20.0 * cm,   // 600 nm
+            20.0 * cm,   // 575 nm
+            20.0 * cm,   // 550 nm
+            20.0 * cm,   // 525 nm
+            20.0 * cm,   // 500 nm
+            20.0 * cm,   // 475 nm
+            20.0 * cm,   // 460 nm
+            20.0 * cm,   // 450 nm
+            20.0 * cm,   // 440 nm
+            20.0 * cm,   // 430 nm
+            20.0 * cm,   // 420 nm
+            20.0 * cm,   // 410 nm
+            20.0 * cm,   // 400 nm
+            20.0 * cm,   // 395 nm
+            20.0 * cm,   // 390 nm
+            20.0 * cm,   // 385 nm
+            20.0 * cm,   // 380 nm
+            20.0 * cm,   // 375 nm
+            20.0 * cm,   // 370 nm
+            20.0 * cm,   // 365 nm
+            20.0 * cm,   // 360 nm
+            20.0 * cm,   // 355 nm
+            20.0 * cm,   // 350 nm
+            20.0 * cm,   // 345 nm
+            20.0 * cm,   // 340 nm
+            20.0 * cm,   // 335 nm
+            20.0 * cm,   // 330 nm
+            20.0 * cm,   // 325 nm
+            20.0 * cm,   // 320 nm
+            20.0 * cm,   // 315 nm
+            20.0 * cm,   // 310 nm
+            20.0 * cm,   // 305 nm
+            20.0 * cm    // 300 nm
         };
 
         auto* scintillatorMPT = new G4MaterialPropertiesTable();
@@ -665,6 +665,160 @@ namespace OpticalMaterials
         return ej228;
     }
 
+    // BC-422 (Luxium/Saint-Gobain): equivalent to EJ-232, peak emission 370 nm
+    G4Material* CreateBC422()
+    {
+        if (auto* existing = G4Material::GetMaterial("BC422", false))
+        {
+            return existing;
+        }
+
+        auto* nist = G4NistManager::Instance();
+
+        // Atom densities from the datasheet: 4.71e22 C/cm3 and 5.19e22 H/cm3.
+        // The density of 1.026 g/cm3 is derived from them, not listed on the page.
+        auto* bc422 = new G4Material("BC422", 1.026 * g / cm3, 2);
+        bc422->AddElement(nist->FindOrBuildElement("C"), 471);
+        bc422->AddElement(nist->FindOrBuildElement("H"), 519);
+
+        const auto& photonEnergy = kScintillatorPhotonEnergy;
+
+        // The datasheet only gives the emission maximum (370 nm), not tabulated values.
+        // The spectrum of EJ-232 (same peak, same light output) is reused.
+        const std::vector<G4double> scintSpectrum =
+        {
+            0.00002,
+            0.00003,
+            0.0001,
+            0.0002,
+            0.0004,
+            0.001,
+            0.002,
+            0.005,
+            0.01,
+            0.02,
+            0.03,
+            0.06,
+            0.10,
+            0.18,
+            0.30,
+            0.39,
+            0.52,
+            0.60,
+            0.75,
+            0.84,
+            0.82,
+            0.87,
+            1.00,
+            0.90,
+            0.68,
+            0.50,
+            0.52,
+            0.35,
+            0.12,
+            0.08,
+            0.05,
+            0.03,
+            0.018,
+            0.010,
+            0.006,
+            0.003,
+            0.0015
+        };
+
+        // Refractive index of polyvinyltoluene-based scintillators; not listed on the page.
+        const std::vector<G4double> rIndex(photonEnergy.size(), 1.58);
+
+        // Bulk light attenuation length of 8 cm from the datasheet.
+        // The UV absorption edge below 340 nm is an extrapolated assumption.
+        const std::vector<G4double> absLength =
+        {
+            8.0 * cm,     // 700 nm
+            8.0 * cm,     // 675 nm
+            8.0 * cm,     // 650 nm
+            8.0 * cm,     // 625 nm
+            8.0 * cm,     // 600 nm
+            8.0 * cm,     // 575 nm
+            8.0 * cm,     // 550 nm
+            8.0 * cm,     // 525 nm
+            8.0 * cm,     // 500 nm
+            8.0 * cm,     // 475 nm
+            8.0 * cm,     // 460 nm
+            8.0 * cm,     // 450 nm
+            8.0 * cm,     // 440 nm
+            8.0 * cm,     // 430 nm
+            8.0 * cm,     // 420 nm
+            8.0 * cm,     // 410 nm
+            8.0 * cm,     // 400 nm
+            8.0 * cm,     // 395 nm
+            8.0 * cm,     // 390 nm
+            8.0 * cm,     // 385 nm
+            8.0 * cm,     // 380 nm
+            8.0 * cm,     // 375 nm
+            8.0 * cm,     // 370 nm
+            8.0 * cm,     // 365 nm
+            8.0 * cm,     // 360 nm
+            8.0 * cm,     // 355 nm
+            8.0 * cm,     // 350 nm
+            8.0 * cm,     // 345 nm
+            8.0 * cm,     // 340 nm
+            5.0 * cm,     // 335 nm
+            2.0 * cm,     // 330 nm
+            0.5 * cm,     // 325 nm
+            0.1 * cm,     // 320 nm
+            0.02 * cm,    // 315 nm
+            0.005 * cm,   // 310 nm
+            0.001 * cm,   // 305 nm
+            0.0005 * cm   // 300 nm
+        };
+
+        auto* scintillatorMPT = new G4MaterialPropertiesTable();
+
+        scintillatorMPT->AddProperty(
+            "RINDEX",
+            photonEnergy,
+            rIndex
+        );
+
+        scintillatorMPT->AddProperty(
+            "ABSLENGTH",
+            photonEnergy,
+            absLength
+        );
+
+        scintillatorMPT->AddProperty(
+            "SCINTILLATIONCOMPONENT1",
+            photonEnergy,
+            scintSpectrum
+        );
+
+        // The page gives 55 % of anthracene but no photons/MeV; 8400/MeV is the EJ-232 value
+        // for the same light output.
+        scintillatorMPT->AddConstProperty(
+            "SCINTILLATIONYIELD",
+            8400. / MeV
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "SCINTILLATIONRISETIME1",
+            350. * ps
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "SCINTILLATIONTIMECONSTANT1",
+            1600. * ps
+        );
+
+        scintillatorMPT->AddConstProperty(
+            "RESOLUTIONSCALE",
+            1.0
+        );
+
+        bc422->SetMaterialPropertiesTable(scintillatorMPT);
+
+        return bc422;
+    }
+
     // Create Scintillator for command input by name
     G4Material* CreateScintillator(const G4String& name)
     {
@@ -672,6 +826,7 @@ namespace OpticalMaterials
         if (name == "EJ232Q05") return CreateEJ232Q05();
         if (name == "EJ230") return CreateEJ230();
         if (name == "EJ228") return CreateEJ228();
+        if (name == "BC422") return CreateBC422();
 
         return nullptr;
     }

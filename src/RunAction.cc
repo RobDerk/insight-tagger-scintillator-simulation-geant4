@@ -1,5 +1,6 @@
 #include "RunAction.hh"
 
+#include "CsvHitWriter.hh"
 #include "DetectorConstruction.hh"
 #include "PrimaryGeneratorAction.hh"
 
@@ -47,12 +48,8 @@ RunAction::RunAction(G4bool writeOutput) : fWriteOutput(writeOutput)
         return;
     }
 
-    // data to csv for Analysis
-    std::filesystem::create_directories("data");
-
+    // Hits go to a ROOT ntuple (analysis manager) and to a CSV file (CsvHitWriter)
     auto analysisManager = G4AnalysisManager::Instance();
-
-    analysisManager->SetNtupleDirectoryName("data");
 
     analysisManager->CreateNtuple("PhotonHits", "Optical photons reaching top or bottom detector surfaces");
 
@@ -106,31 +103,40 @@ void RunAction::BeginOfRunAction(const G4Run* run)
         std::ostringstream nameStream;
         nameStream << detector->GetScintLengthY() / mm << "mm";
 
-        fBaseName = nameStream.str();
-
         const auto* generator = static_cast<const PrimaryGeneratorAction*>(
             G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
 
-        fOutputSubDir =
-            detector->GetScintMaterialName()
-            + "/"
-            + EnergyLabel(generator->GetParticleGun()->GetParticleEnergy());
+        // data/<material>/<energy>/<length>mm.{root,csv}
+        const std::filesystem::path outputDir =
+            std::filesystem::path("data")
+            / std::string(detector->GetScintMaterialName())
+            / EnergyLabel(generator->GetParticleGun()->GetParticleEnergy());
 
-        const G4String fileName = fBaseName + ".csv";
+        std::error_code ec;
+        std::filesystem::create_directories(outputDir, ec);
 
-        G4cout << "Output base name: " << fileName << "\n";
-
-        if (!analysisManager->OpenFile(fileName))
+        if (ec)
         {
-            G4cerr
-                << "ERROR: Could not open analysis file "
-                << fileName
-                << G4endl;
+            G4cerr << "ERROR: could not create " << outputDir << ": " << ec.message() << G4endl;
+        }
+
+        const std::string basePath = (outputDir / nameStream.str()).string();
+
+        G4cout << "Output files    : " << basePath << ".root / .csv\n";
+
+        if (!analysisManager->OpenFile(basePath + ".root"))
+        {
+            G4cerr << "ERROR: Could not open ROOT file " << basePath << ".root" << G4endl;
+        }
+
+        if (!CsvHitWriter::Instance().Open(basePath + ".csv"))
+        {
+            G4cerr << "ERROR: Could not open CSV file " << basePath << ".csv" << G4endl;
         }
     }
     else
     {
-        G4cout << "CSV output disabled\n";
+        G4cout << "Output disabled\n";
     }
 
     G4cout << "====================================\n" << G4endl;
@@ -150,49 +156,14 @@ void RunAction::EndOfRunAction(const G4Run* run)
     G4double edep = fEdep.GetValue();
     G4double edep2 = fEdep2.GetValue();
 
-    // stroing data in csv
+    // storing data in ROOT and CSV
     if (fWriteOutput)
     {
         auto analysisManager = G4AnalysisManager::Instance();
         analysisManager->Write();
         analysisManager->CloseFile();
 
-        // Geant4 writes "<base>_nt_<ntupleName>.csv" into data/; move it to data/<material>/<energy>/<base>.csv
-        const std::filesystem::path dataDir("data");
-        const std::filesystem::path targetDir = dataDir / fOutputSubDir;
-        const std::string generatedPrefix = fBaseName + "_nt_";
-
-        bool renamed = false;
-
-        for (const auto& entry : std::filesystem::directory_iterator(dataDir))
-        {
-            const std::string name = entry.path().filename().string();
-
-            if (name.rfind(generatedPrefix, 0) == 0 && entry.path().extension() == ".csv")
-            {
-                std::error_code ec;
-
-                std::filesystem::create_directories(targetDir, ec);
-
-                if (!ec)
-                {
-                    std::filesystem::rename(entry.path(), targetDir / (fBaseName + ".csv"), ec);
-                }
-
-                if (ec)
-                {
-                    G4cerr << "WARNING: could not move " << entry.path() << ": " << ec.message() << G4endl;
-                }
-
-                renamed = true;
-                break;
-            }
-        }
-
-        if (!renamed)
-        {
-            G4cerr << "WARNING: no output file starting with " << generatedPrefix << " found in data/" << G4endl;
-        }
+        CsvHitWriter::Instance().Close();
     }
 
     const G4int nEvents = run->GetNumberOfEvent();

@@ -34,6 +34,13 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // Option to switch on/off checking of volumes overlaps´
     G4bool checkOverlaps = true;
 
+    // Create all scintillators before the first physics table build; G4Cerenkov
+    // only builds its table once and would miss materials created in later runs.
+    for (const auto& name : OpticalMaterials::kScintillatorNames)
+    {
+        OpticalMaterials::CreateScintillator(name);
+    }
+
     //
     // World
     //

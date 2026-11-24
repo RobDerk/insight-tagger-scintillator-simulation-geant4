@@ -15,7 +15,7 @@ Das Szintillatormaterial ist austauschbar. Im **Batch-Modus** können jetzt **me
 | `PrimaryGeneratorAction` | Teilchenquelle (Standard: e⁻, +z-Richtung) |
 | `SteppingAction` | Photonen-Tracking, Zählung an den Stirnflächen, Reflexionen, Eintrittszeit des Elektrons |
 | `EventAction` | Zähler pro Event, Ausgabe der Event-Zusammenfassung |
-| `RunAction` | CSV-Ausgabe, Zusammenfassung pro Run |
+| `RunAction` | ROOT- und CSV-Ausgabe, Zusammenfassung pro Run |
 | `ScintillatorSD`, `PMTSD` | Sensitive Detektoren |
 
 ## Geometrie (Standardwerte)
@@ -63,10 +63,12 @@ Ohne Kommandozeilenargumente wird der interaktive Modus gestartet und `vis.mac` 
 ### Batch-Modus
 
 ```bash
-./Scintillation_Simulation <macro> [events] [energies] [lengths] [materials]
+./Scintillation_Simulation <macro> [events] [energies] [lengths] [materials] [--dry-run]
 ```
 
 Alle Argumente nach `<macro>` sind optional. **Einzelwerte und Listen** werden für `energies`, `lengths` und `materials` akzeptiert.
+
+**`--dry-run`** (am Ende, wird aber an jeder Stelle akzeptiert): Die Simulation läuft vollständig durch, schreibt aber **keine Dateien (weder ROOT noch CSV)**. Bestehende Dateien in `data/` bleiben unverändert. Praktisch zum Testen von Parametern und Laufzeiten, z. B. `./Scintillation_Simulation run.mac 10 "[1,2]" "[50,70]" "[EJ230,EJ232]" --dry-run`.
 
 | Argument | Bedeutung | Standard |
 |---|---|---|
@@ -82,7 +84,7 @@ Alle Argumente nach `<macro>` sind optional. **Einzelwerte und Listen** werden f
 - Ein einzelner Wert funktioniert weiterhin **ohne** eckige Klammern, z. B. `1`, `70mm` oder `EJ232`.
 - **Energien:** Zulässige Einheiten sind `eV`, `keV`, `MeV`, `GeV` und `TeV`; die Groß-/Kleinschreibung ist egal, z. B. `"[1Mev,1Gev]"`. Einträge ohne Einheit gelten als **MeV**, z. B. `"[1,2,3]"` = 1, 2 und 3 MeV. Gemischte Einträge sind möglich, etwa `"[1,2,1GeV]"`.
 - **Längen:** Zulässige Einheiten sind `um`, `mm` und `cm`; auch hier ist die Groß-/Kleinschreibung egal, z. B. `"[70mm,100MM]"`. Einträge ohne Einheit gelten als **mm**, z. B. `"[50,70,100]"` = 50, 70 und 100 mm. Die Werte müssen positiv sein und in die World-Geometrie passen.
-- **Materialien:** Namen sind **groß-/kleinschreibungssensitiv** und müssen in `OpticalMaterials::kScintillatorNames` registriert sein. Beispiele sind `EJ228`, `EJ230`, `EJ232` und `EJ232Q05`, sofern sie in dieser Liste enthalten sind.
+- **Materialien:** Namen sind **groß-/kleinschreibungssensitiv** und müssen in `OpticalMaterials::kScintillatorNames` registriert sein. Beispiele sind `EJ228`, `EJ230`, `EJ232`, `EJ232Q05` und `BC422`, sofern sie in dieser Liste enthalten sind.
 - Leere Listen, nicht unterstützte Einheiten und ungültige Materialnamen führen zu einer Fehlermeldung.
 
 ### Beispiele
@@ -139,7 +141,7 @@ Gesamtzahl Events = Runs × Events pro Run
 ## Ausgabe
 
 - **Konsole:** Pro Event werden unter anderem Primärteilchen, Energiedeposition, Zeit des Elektroneneintritts, Photonenzahlen oben/unten/gesamt, Asymmetrie und Rechenzeit ausgegeben. Für jeden Run erscheint zusätzlich eine Zusammenfassung; bei mehreren Parameterkombinationen wird die aktuelle Simulation mit Material, Länge und Energie angekündigt.
-- **CSV-Dateien:** Nach Material und Energie sortiert im Schema `data/<material>/<energie>/<länge>mm.csv`, z. B. `data/EJ230/1GeV/70mm.csv`. Die Ausgabeorganisation entspricht der bisherigen Implementierung in `RunAction`. **Eine erneut ausgeführte identische Kombination kann eine vorhandene CSV-Datei überschreiben.** Pro Photon-Treffer wird ein Datensatz geschrieben.
+- **Dateien (ROOT und CSV):** Pro Run werden zwei Dateien mit denselben Daten geschrieben, nach Material und Energie sortiert im Schema `data/<material>/<energie>/<länge>mm.root` und `.csv`, z. B. `data/EJ230/1GeV/70mm.root` und `data/EJ230/1GeV/70mm.csv`. Das ROOT-File enthält die Ntuple `PhotonHits`. Die CSV-Datei hat den Kopf des Geant4-CSV-Formats (Zeilen mit `#`, z. B. `pandas.read_csv(..., comment="#", names=[...])`). **Eine erneut ausgeführte identische Kombination überschreibt vorhandene Dateien.** Pro Photon-Treffer wird ein Datensatz geschrieben.
 
 Beispiel für den letzten Batch-Aufruf:
 
@@ -147,8 +149,11 @@ Beispiel für den letzten Batch-Aufruf:
 data/
 ├── EJ228/
 │   ├── 1MeV/
+│   │   ├── 50mm.root
 │   │   ├── 50mm.csv
+│   │   ├── 70mm.root
 │   │   ├── 70mm.csv
+│   │   ├── 100mm.root
 │   │   └── 100mm.csv
 │   ├── 2MeV/
 │   └── 1GeV/

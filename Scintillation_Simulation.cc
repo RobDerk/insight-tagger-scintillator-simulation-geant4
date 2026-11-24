@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <sstream>
@@ -191,12 +192,26 @@ namespace
 } // namespace
 
 // Batch usage:
-// ./Scintillation_Simulation <macro> [events] [energies] [lengths] [materials]
+// ./Scintillation_Simulation <macro> [events] [energies] [lengths] [materials] [--dry-run]
+// --dry-run: run the full simulation but write no CSV files (accepted at any position).
 // Example: ./Scintillation_Simulation run.mac 1000 '[1MeV,2MeV,1GeV]' '[50mm,70mm]' '[EJ228,EJ230]'
 // Entries without a unit are MeV (energies) and mm (lengths).
 // No arguments: interactive UI with vis.mac.
 int main(int argc, char** argv)
 {
+    // Strip --dry-run so the remaining arguments stay positional
+    bool dryRun = false;
+    std::vector<char*> positionalArgs = {argv[0]};
+
+    for (int a = 1; a < argc; ++a)
+    {
+        if (std::string(argv[a]) == "--dry-run") dryRun = true;
+        else positionalArgs.push_back(argv[a]);
+    }
+
+    argc = static_cast<int>(positionalArgs.size());
+    argv = positionalArgs.data();
+
     G4UIExecutive* ui = (argc == 1) ? new G4UIExecutive(argc, argv) : nullptr;
 
     G4int numberOfEvents = 1;
@@ -247,6 +262,7 @@ int main(int argc, char** argv)
         const G4String beamOnCommand = "/run/beamOn " + std::to_string(numberOfEvents);
         const std::size_t nRuns = scintMaterials.size() * scintLengths.size() * energies.size();
         std::size_t runIndex = 0;
+        const auto simulationStart = std::chrono::steady_clock::now();
 
         // One run manager for the whole process; the geometry is rebuilt between runs.
         auto* runManager = G4RunManagerFactory::CreateRunManager(
@@ -257,7 +273,7 @@ int main(int argc, char** argv)
 
         runManager->SetUserInitialization(detector);
         runManager->SetUserInitialization(new PhysicsList());
-        runManager->SetUserInitialization(new ActionInitialization(true));
+        runManager->SetUserInitialization(new ActionInitialization(!dryRun));
 
         // The macro contains /run/initialize, so it runs only once
         if (uiManager->ApplyCommand("/control/execute " + macroFile) != 0)
@@ -316,6 +332,36 @@ int main(int argc, char** argv)
                 }
             }
         }
+
+        const double totalSeconds = std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - simulationStart).count();
+        const long long total = std::llround(totalSeconds);
+
+        G4cout << "\n===================================="
+               << "\nAll simulations finished"
+               << "\nRuns            : " << runIndex
+               << "\nEvents per run  : " << numberOfEvents
+               << "\nCSV output      : " << (dryRun ? "disabled (dry run)" : "enabled")
+               << "\nTotal time      : " << total / 3600 << " h "
+               << (total % 3600) / 60 << " min " << total % 60 << " s"
+               << "\nMaterials       : ";
+
+        for (std::size_t m = 0; m < scintMaterials.size(); ++m)
+            G4cout << (m ? ", " : "") << scintMaterials[m];
+
+        G4cout << "\nEnergies        : ";
+
+        for (std::size_t e = 0; e < energies.size(); ++e)
+            G4cout << (e ? ", " : "") << energies[e].value << " " << energies[e].unit;
+
+        G4cout << "\nLengths (y)     : ";
+
+        for (std::size_t l = 0; l < scintLengths.size(); ++l)
+            G4cout << (l ? ", " : "")
+                   << scintLengths[l] / G4UnitDefinition::GetValueOf(scintUnits[l])
+                   << " " << scintUnits[l];
+
+        G4cout << "\n====================================" << G4endl;
 
         delete runManager;
     }

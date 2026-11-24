@@ -1,5 +1,6 @@
 #include "SteppingAction.hh"
 
+#include "CsvHitWriter.hh"
 #include "DetectorConstruction.hh"
 #include "EventAction.hh"
 
@@ -303,25 +304,46 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     }
 
     // collect energy data for storing
+    HitRecord record;
+    record.runID = runID;
+    record.eventID = eventID;
+    record.trackID = trackID;
+    record.hit = hitType;
+    record.globalTime = globalTime / ns;
+    record.timeSinceElectronHit = relativeTimeSinceElectronHit / ns;
+    record.trackLength = trackLength / mm;
+    record.photonEnergy = photonEnergy / eV;
+    record.photonFlightTime = photonFlightTime / ns;
+    record.photonCreationTime = photonCreationTime / ns;
+    record.creatorProcess = creatorName;
+    record.nSideReflections = fEventAction->GetSideReflections(trackID);
+    record.scintLength = 2. * fScintHalfY / mm;
+    record.emissionAngle = emissionAngle / deg;
+    record.material = fScoringVolume->GetMaterial()->GetName();
+    record.electronEnergy = electronEnergy / MeV;
+
+    // ROOT ntuple
     auto analysisManager = G4AnalysisManager::Instance();
 
-    analysisManager->FillNtupleIColumn(0, runID);
-    analysisManager->FillNtupleIColumn(1, eventID);
-    analysisManager->FillNtupleIColumn(2, trackID);
-    analysisManager->FillNtupleSColumn(3, hitType);
-    analysisManager->FillNtupleDColumn(4, globalTime / ns);
-    analysisManager->FillNtupleDColumn(5, relativeTimeSinceElectronHit / ns);
-    analysisManager->FillNtupleDColumn(6, trackLength / mm);
-    analysisManager->FillNtupleDColumn(7, photonEnergy / eV);
-    analysisManager->FillNtupleDColumn(8, photonFlightTime / ns);
-    analysisManager->FillNtupleDColumn(9, photonCreationTime / ns);
-    analysisManager->FillNtupleSColumn(10, creatorName);
-    analysisManager->FillNtupleIColumn(11, fEventAction->GetSideReflections(trackID));
-    analysisManager->FillNtupleDColumn(12, 2. * fScintHalfY / mm);
-    analysisManager->FillNtupleDColumn(13, emissionAngle / deg);
-    analysisManager->FillNtupleSColumn(14, fScoringVolume->GetMaterial()->GetName());
-    analysisManager->FillNtupleDColumn(15, electronEnergy / MeV);
+    analysisManager->FillNtupleIColumn(0, record.runID);
+    analysisManager->FillNtupleIColumn(1, record.eventID);
+    analysisManager->FillNtupleIColumn(2, record.trackID);
+    analysisManager->FillNtupleSColumn(3, record.hit);
+    analysisManager->FillNtupleDColumn(4, record.globalTime);
+    analysisManager->FillNtupleDColumn(5, record.timeSinceElectronHit);
+    analysisManager->FillNtupleDColumn(6, record.trackLength);
+    analysisManager->FillNtupleDColumn(7, record.photonEnergy);
+    analysisManager->FillNtupleDColumn(8, record.photonFlightTime);
+    analysisManager->FillNtupleDColumn(9, record.photonCreationTime);
+    analysisManager->FillNtupleSColumn(10, record.creatorProcess);
+    analysisManager->FillNtupleIColumn(11, record.nSideReflections);
+    analysisManager->FillNtupleDColumn(12, record.scintLength);
+    analysisManager->FillNtupleDColumn(13, record.emissionAngle);
+    analysisManager->FillNtupleSColumn(14, record.material);
+    analysisManager->FillNtupleDColumn(15, record.electronEnergy);
 
     analysisManager->AddNtupleRow();
 
+    // CSV file
+    CsvHitWriter::Instance().Write(record);
 }

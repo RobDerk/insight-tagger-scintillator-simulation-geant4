@@ -20,6 +20,7 @@ namespace OpticalMaterials
     G4Material* CreateEJ232Q05();
     G4Material* CreateEJ230();
     G4Material* CreateEJ228();
+    G4Material* CreateBC422();
 
     // Reflector surface material
     G4OpticalSurface* CreateReflectorSurface();
@@ -29,7 +30,8 @@ namespace OpticalMaterials
         "EJ232", 
         "EJ232Q05",
         "EJ230",
-        "EJ228"
+        "EJ228",
+        "BC422"
     };
 
     // Returns nullptr for a name not in kScintillatorNames
